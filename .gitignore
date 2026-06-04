@@ -16,3 +16,4 @@ todos.json
 *.tsbuildinfo
 
 /src/generated/prisma
+.vercel
