@@ -1,0 +1,45 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ScrapeStatus {
+  ok
+  not_found
+  parse_error
+}
+
+model LeaderboardEntry {
+  id                 String       @id @default(cuid())
+  handle             String       @unique
+  country            String       @db.Char(2)
+  displayName        String?
+  profileUrl         String
+  isAmbassador       Boolean      @default(false)
+  joinedDaysAgo      Int?
+  agentsTotal        Int          @default(0)
+  agentsLocal        Int          @default(0)
+  agentsCloud        Int          @default(0)
+  currentStreakDays  Int          @default(0)
+  longestStreakDays  Int          @default(0)
+  longestAgentHours  Float        @default(0)
+  tokensTotal        BigInt       @default(0)
+  topModels          Json         @default("[]")
+  scrapeStatus       ScrapeStatus @default(parse_error)
+  scrapeError        String?
+  scrapedAt          DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([agentsTotal(sort: Desc)])
+  @@index([country, agentsTotal(sort: Desc)])
+  @@index([tokensTotal(sort: Desc)])
+  @@index([currentStreakDays(sort: Desc)])
+  @@index([longestStreakDays(sort: Desc)])
+}

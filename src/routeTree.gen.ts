@@ -8,59 +8,271 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root"
-import { Route as IndexRouteImport } from "./routes/index"
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as CountriesRouteImport } from './routes/countries'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiLeaderboardRouteImport } from './routes/api/leaderboard'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiEntriesRouteImport } from './routes/api/entries'
+import { Route as ApiEntriesHandleRouteImport } from './routes/api/entries/$handle'
+import { Route as ApiCountriesStatsRouteImport } from './routes/api/countries/stats'
+import { Route as ApiEntriesHandleRefreshRouteImport } from './routes/api/entries/$handle/refresh'
 
-const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CountriesRoute = CountriesRouteImport.update({
+  id: '/countries',
+  path: '/countries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLeaderboardRoute = ApiLeaderboardRouteImport.update({
+  id: '/api/leaderboard',
+  path: '/api/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEntriesRoute = ApiEntriesRouteImport.update({
+  id: '/api/entries',
+  path: '/api/entries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEntriesHandleRoute = ApiEntriesHandleRouteImport.update({
+  id: '/$handle',
+  path: '/$handle',
+  getParentRoute: () => ApiEntriesRoute,
+} as any)
+const ApiCountriesStatsRoute = ApiCountriesStatsRouteImport.update({
+  id: '/api/countries/stats',
+  path: '/api/countries/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEntriesHandleRefreshRoute = ApiEntriesHandleRefreshRouteImport.update({
+  id: '/refresh',
+  path: '/refresh',
+  getParentRoute: () => ApiEntriesHandleRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute
+  '/': typeof IndexRoute
+  '/countries': typeof CountriesRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/entries': typeof ApiEntriesRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
+  '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/countries/stats': typeof ApiCountriesStatsRoute
+  '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
+  '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute
+  '/': typeof IndexRoute
+  '/countries': typeof CountriesRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/entries': typeof ApiEntriesRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
+  '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/countries/stats': typeof ApiCountriesStatsRoute
+  '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
+  '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  "/": typeof IndexRoute
+  '/': typeof IndexRoute
+  '/countries': typeof CountriesRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/entries': typeof ApiEntriesRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
+  '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/countries/stats': typeof ApiCountriesStatsRoute
+  '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
+  '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/"
+  fullPaths:
+    | '/'
+    | '/countries'
+    | '/robots.txt'
+    | '/sitemap.xml'
+    | '/api/entries'
+    | '/api/health'
+    | '/api/leaderboard'
+    | '/api/countries/stats'
+    | '/api/entries/$handle'
+    | '/api/entries/$handle/refresh'
   fileRoutesByTo: FileRoutesByTo
-  to: "/"
-  id: "__root__" | "/"
+  to:
+    | '/'
+    | '/countries'
+    | '/robots.txt'
+    | '/sitemap.xml'
+    | '/api/entries'
+    | '/api/health'
+    | '/api/leaderboard'
+    | '/api/countries/stats'
+    | '/api/entries/$handle'
+    | '/api/entries/$handle/refresh'
+  id:
+    | '__root__'
+    | '/'
+    | '/countries'
+    | '/robots.txt'
+    | '/sitemap.xml'
+    | '/api/entries'
+    | '/api/health'
+    | '/api/leaderboard'
+    | '/api/countries/stats'
+    | '/api/entries/$handle'
+    | '/api/entries/$handle/refresh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CountriesRoute: typeof CountriesRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiEntriesRoute: typeof ApiEntriesRouteWithChildren
+  ApiHealthRoute: typeof ApiHealthRoute
+  ApiLeaderboardRoute: typeof ApiLeaderboardRoute
+  ApiCountriesStatsRoute: typeof ApiCountriesStatsRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/countries': {
+      id: '/countries'
+      path: '/countries'
+      fullPath: '/countries'
+      preLoaderRoute: typeof CountriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/leaderboard': {
+      id: '/api/leaderboard'
+      path: '/api/leaderboard'
+      fullPath: '/api/leaderboard'
+      preLoaderRoute: typeof ApiLeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/entries': {
+      id: '/api/entries'
+      path: '/api/entries'
+      fullPath: '/api/entries'
+      preLoaderRoute: typeof ApiEntriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/entries/$handle': {
+      id: '/api/entries/$handle'
+      path: '/$handle'
+      fullPath: '/api/entries/$handle'
+      preLoaderRoute: typeof ApiEntriesHandleRouteImport
+      parentRoute: typeof ApiEntriesRoute
+    }
+    '/api/countries/stats': {
+      id: '/api/countries/stats'
+      path: '/api/countries/stats'
+      fullPath: '/api/countries/stats'
+      preLoaderRoute: typeof ApiCountriesStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/entries/$handle/refresh': {
+      id: '/api/entries/$handle/refresh'
+      path: '/refresh'
+      fullPath: '/api/entries/$handle/refresh'
+      preLoaderRoute: typeof ApiEntriesHandleRefreshRouteImport
+      parentRoute: typeof ApiEntriesHandleRoute
     }
   }
 }
 
+interface ApiEntriesHandleRouteChildren {
+  ApiEntriesHandleRefreshRoute: typeof ApiEntriesHandleRefreshRoute
+}
+
+const ApiEntriesHandleRouteChildren: ApiEntriesHandleRouteChildren = {
+  ApiEntriesHandleRefreshRoute: ApiEntriesHandleRefreshRoute,
+}
+
+const ApiEntriesHandleRouteWithChildren =
+  ApiEntriesHandleRoute._addFileChildren(ApiEntriesHandleRouteChildren)
+
+interface ApiEntriesRouteChildren {
+  ApiEntriesHandleRoute: typeof ApiEntriesHandleRouteWithChildren
+}
+
+const ApiEntriesRouteChildren: ApiEntriesRouteChildren = {
+  ApiEntriesHandleRoute: ApiEntriesHandleRouteWithChildren,
+}
+
+const ApiEntriesRouteWithChildren = ApiEntriesRoute._addFileChildren(
+  ApiEntriesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CountriesRoute: CountriesRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiEntriesRoute: ApiEntriesRouteWithChildren,
+  ApiHealthRoute: ApiHealthRoute,
+  ApiLeaderboardRoute: ApiLeaderboardRoute,
+  ApiCountriesStatsRoute: ApiCountriesStatsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx"
-import type { createStart } from "@tanstack/react-start"
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
