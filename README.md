@@ -65,7 +65,7 @@ Metrics: `agents` (default), `tokens`, `currentStreak`, `longestStreak`.
 | File | Purpose |
 |------|---------|
 | `prisma/schema.prisma` | Schema + `LeaderboardEntry` model |
-| `prisma.config.ts` | `DATABASE_URL` + migrations path |
+| `prisma.config.ts` | Direct DB URL for CLI (`DIRECT_URL` or derived from pooled `DATABASE_URL`) |
 | `src/generated/prisma/` | Generated client (do not edit) |
 | `src/server/db/prisma.ts` | Singleton client with `@prisma/adapter-pg` |
 
@@ -90,7 +90,7 @@ The app supports **Vercel** (Nitro) and **Netlify** (`@netlify/vite-plugin-tanst
 | Vercel | `pnpm build:vercel` | `.vercel/output` (via Nitro) |
 | Netlify | `pnpm build:netlify` | `dist/client` |
 
-**Environment variables** (both hosts): `DATABASE_URL`, optional `VITE_SITE_URL`, `SCRAPE_COOLDOWN_MINUTES`, `SCRAPE_USER_AGENT`.
+**Environment variables** (both hosts): `DATABASE_URL` (Neon pooled URL for runtime), optional `DIRECT_URL` (direct Neon URL for Prisma CLI — auto-derived from pooled `DATABASE_URL` on Netlify builds), optional `VITE_SITE_URL`, `SCRAPE_COOLDOWN_MINUTES`, `SCRAPE_USER_AGENT`.
 
 - **Vercel**: `vercel.json` runs `build:vercel`. Add the same env vars in the project settings.
 - **Netlify**: `netlify.toml` runs migrations then `build:netlify`. Requires Netlify CLI ≥ 17.31 for the TanStack Start plugin.

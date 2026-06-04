@@ -9,3 +9,5 @@
 [build.environment]
   NODE_VERSION = "22"
   DEPLOY_TARGET = "netlify"
+  # DATABASE_URL — Neon pooled connection (set in Netlify UI)
+  # DIRECT_URL — optional; migrations use direct URL (derived from DATABASE_URL if omitted)

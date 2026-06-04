@@ -3,12 +3,28 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+/** Prisma CLI (migrate, db push) needs a direct Postgres connection — not Neon pooler. */
+function resolveDirectDatabaseUrl(): string | undefined {
+  const directUrl = process.env["DIRECT_URL"];
+  if (directUrl) return directUrl;
+
+  const databaseUrl = process.env["DATABASE_URL"];
+  if (!databaseUrl) return undefined;
+
+  // Neon pooled hostnames include `-pooler`; strip it when DIRECT_URL is unset.
+  if (databaseUrl.includes("-pooler.")) {
+    return databaseUrl.replace("-pooler.", ".");
+  }
+
+  return databaseUrl;
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: resolveDirectDatabaseUrl(),
   },
 });
