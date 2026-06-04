@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     envPrefix: ["VITE_", "DATABASE_", "SCRAPE_"],
+    // Server secrets must stay runtime-only on Vercel — do not `define` DATABASE_URL.
     define: {
-      "process.env.DATABASE_URL": JSON.stringify(env.DATABASE_URL ?? ""),
       "process.env.SCRAPE_COOLDOWN_MINUTES": JSON.stringify(
         env.SCRAPE_COOLDOWN_MINUTES ?? "15",
       ),
