@@ -28,4 +28,25 @@ describe("parseCursorProfileHtml", () => {
     expect(result.stats.topModels.length).toBeGreaterThanOrEqual(1)
     expect(result.stats.topModels[0]).toContain("Composer")
   })
+
+  it("parses compact Agents totals (K, M, B)", () => {
+    const htmlK = `<!DOCTYPE html><html><body><h1>John Paul Poliquit</h1><p>@jpl</p>
+      <span>Agents</span><span>1.1K</span>
+      <span>Tokens</span><span>5.2B</span>
+      <span>Longest Streak</span><span>30d</span>
+      Local (907) Cloud (145)`
+    const resultK = parseCursorProfileHtml(htmlK, "jpl")
+    expect(resultK.ok).toBe(true)
+    if (!resultK.ok) return
+    expect(resultK.stats.agentsTotal).toBe(1100)
+
+    const htmlM = `<!DOCTYPE html><html><body><h1>Power User</h1><p>@big</p>
+      <span>Agents</span><span>2.5M</span>
+      <span>Tokens</span><span>1B</span>
+      <span>Longest Streak</span><span>7d</span>`
+    const resultM = parseCursorProfileHtml(htmlM, "big")
+    expect(resultM.ok).toBe(true)
+    if (!resultM.ok) return
+    expect(resultM.stats.agentsTotal).toBe(2_500_000)
+  })
 })

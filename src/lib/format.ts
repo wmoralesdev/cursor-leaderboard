@@ -43,6 +43,11 @@ export function formatCompact(value: number | bigint): string {
   return compactFormatter.format(value)
 }
 
+/** Display agents like cursor.com (K / M / B compact). Sort/rank uses raw `agentsTotal`. */
+export function formatAgents(count: number): string {
+  return formatCompact(count)
+}
+
 export function formatTokens(tokens: string): string {
   try {
     return compactFormatter.format(BigInt(tokens))
@@ -61,7 +66,7 @@ export function formatMetricValue(metric: MetricKey, entry: EntryDto): string {
       return `${entry.longestStreakDays}d`
     case "agents":
     default:
-      return formatInt(entry.agentsTotal)
+      return formatAgents(entry.agentsTotal)
   }
 }
 

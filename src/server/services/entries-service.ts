@@ -199,6 +199,59 @@ export async function refreshEntry(rawHandle: string): Promise<LeaderboardEntry>
   return applyScrapeToEntry(handle, existing.country)
 }
 
+/** Re-scrape a stored entry, bypassing the API refresh cooldown (dev/ops). */
+export async function rescrapeEntry(rawHandle: string): Promise<LeaderboardEntry> {
+  const handle = normalizeHandle(rawHandle)
+  const existing = await prisma.leaderboardEntry.findUnique({
+    where: { handle },
+  })
+
+  if (!existing) {
+    throw new EntryNotFoundError()
+  }
+
+  return applyScrapeToEntry(handle, existing.country)
+}
+
+export type RescrapeAllResult = {
+  ok: number
+  failed: number
+  errors: Array<{ handle: string; error: string }>
+}
+
+/** Re-scrape every leaderboard row (dev/ops). */
+export async function rescrapeAllEntries(options?: {
+  delayMs?: number
+}): Promise<RescrapeAllResult> {
+  const delayMs = options?.delayMs ?? 500
+  const entries = await prisma.leaderboardEntry.findMany({
+    select: { handle: true },
+    orderBy: { handle: "asc" },
+  })
+
+  const result: RescrapeAllResult = { ok: 0, failed: 0, errors: [] }
+
+  for (let i = 0; i < entries.length; i++) {
+    const { handle } = entries[i]
+    try {
+      await rescrapeEntry(handle)
+      result.ok += 1
+      console.log(`[rescrape] ${i + 1}/${entries.length} ${handle} ok`)
+    } catch (error) {
+      result.failed += 1
+      const message = error instanceof Error ? error.message : String(error)
+      result.errors.push({ handle, error: message })
+      console.error(`[rescrape] ${i + 1}/${entries.length} ${handle} failed: ${message}`)
+    }
+
+    if (delayMs > 0 && i < entries.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  return result
+}
+
 export type LeaderboardPageResult = {
   entries: LeaderboardEntry[]
   total: number

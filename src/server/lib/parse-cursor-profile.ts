@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio"
+import { parseCompactCount } from "@/server/lib/parse-compact-count"
 import { parseTokenCount } from "@/server/lib/parse-token-count"
 
 export type CursorProfileStats = {
@@ -43,8 +44,7 @@ function parseHours(value: string | null): number {
 
 function parseIntStat(value: string | null): number {
   if (!value) return 0
-  const digits = value.replace(/,/g, "").match(/\d+/)
-  return digits ? Number.parseInt(digits[0], 10) : 0
+  return parseCompactCount(value)
 }
 
 function extractTopModels(html: string): string[] {
@@ -120,12 +120,12 @@ export function parseCursorProfileHtml(
     })(),
     agentsTotal,
     agentsLocal: (() => {
-      const match = html.match(/Local\s*\((\d+)\)/i)
-      return match ? Number.parseInt(match[1], 10) : 0
+      const match = html.match(/Local\s*\(([^)]+)\)/i)
+      return match ? parseCompactCount(match[1]) : 0
     })(),
     agentsCloud: (() => {
-      const match = html.match(/Cloud\s*\((\d+)\)/i)
-      return match ? Number.parseInt(match[1], 10) : 0
+      const match = html.match(/Cloud\s*\(([^)]+)\)/i)
+      return match ? parseCompactCount(match[1]) : 0
     })(),
     currentStreakDays: parseDays(extractLabelValue(html, "Current Streak")),
     longestStreakDays: parseDays(extractLabelValue(html, "Longest Streak")),

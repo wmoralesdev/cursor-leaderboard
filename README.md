@@ -70,6 +70,12 @@ Metrics: `agents` (default), `tokens`, `currentStreak`, `longestStreak`.
 | `src/server/db/prisma.ts` | Singleton client with `@prisma/adapter-pg` |
 
 ```bash
+# Re-scrape stored profiles (bypasses API cooldown; needs DATABASE_URL in .env)
+pnpm rescrape jpl
+pnpm rescrape https://cursor.com/@jpl
+pnpm rescrape --all
+pnpm rescrape --all --delay-ms=1000
+
 pnpm db:generate        # Regenerate client after schema changes
 pnpm db:migrate         # Create/apply migrations (dev)
 pnpm db:migrate:deploy  # Apply migrations (CI/production)
@@ -111,6 +117,7 @@ Local dev uses `pnpm dev` without a host plugin.
 
 - `pnpm dev` — dev server (port 3000)
 - `pnpm build:vercel` / `pnpm build:netlify` — production build for each host
+- `pnpm rescrape` — dev CLI to re-fetch cursor.com stats for stored handles
 - `pnpm test` — parser/unit tests
 - `pnpm typecheck` — TypeScript
 

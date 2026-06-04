@@ -19,6 +19,7 @@
     "db:status": "prisma migrate status",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "rescrape": "tsx scripts/rescrape.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -64,6 +65,7 @@
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "prisma": "^7.8.0",
+    "tsx": "^4.22.4",
     "typescript": "^6",
     "vite": "^8",
     "vitest": "^4"
