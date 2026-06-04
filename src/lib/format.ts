@@ -75,3 +75,17 @@ export function metricUnitLabel(metric: MetricKey): string {
       return "agents"
   }
 }
+
+export function metricCountryRankPhrase(metric: MetricKey): string {
+  switch (metric) {
+    case "tokens":
+      return "combined tokens across profiles in each country"
+    case "currentStreak":
+      return "highest current streak in each country"
+    case "longestStreak":
+      return "longest streak in each country"
+    case "agents":
+    default:
+      return "total agents across profiles in each country"
+  }
+}

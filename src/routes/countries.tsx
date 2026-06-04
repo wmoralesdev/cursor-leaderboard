@@ -1,10 +1,11 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 
 import { CountryStatsCard } from "@/components/countries/country-stats-card"
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
+import { MetricTabs } from "@/components/leaderboard/metric-tabs"
 import type { MetricKey } from "@/lib/api"
 import { getCountryStats } from "@/lib/api"
-import { METRICS } from "@/lib/format"
+import { METRICS, metricCountryRankPhrase } from "@/lib/format"
 import {
   absoluteUrl,
   buildPageHead,
@@ -14,16 +15,28 @@ import {
   websiteJsonLd,
 } from "@/lib/seo"
 
-const DEFAULT_METRIC: MetricKey = "agents"
+const METRIC_KEYS: MetricKey[] = [
+  "agents",
+  "tokens",
+  "currentStreak",
+  "longestStreak",
+]
 
-const HOME_SEARCH = {
-  metric: DEFAULT_METRIC,
-  order: "desc" as const,
-  page: 1,
-  limit: 100 as const,
+type CountriesSearch = {
+  metric: MetricKey
+}
+
+function leaderboardSearch(metric: MetricKey) {
+  return { metric, order: "desc" as const, page: 1, limit: 100 as const }
 }
 
 export const Route = createFileRoute("/countries")({
+  validateSearch: (search: Record<string, unknown>): CountriesSearch => {
+    const metric = METRIC_KEYS.includes(search.metric as MetricKey)
+      ? (search.metric as MetricKey)
+      : "agents"
+    return { metric }
+  },
   head: () => {
     const origin = getSiteOrigin()
     const description =
@@ -45,16 +58,23 @@ export const Route = createFileRoute("/countries")({
       ],
     })
   },
-  loader: () => getCountryStats({ data: { metric: DEFAULT_METRIC } }),
+  loaderDeps: ({ search }) => ({ metric: search.metric }),
+  loader: ({ deps }) => getCountryStats({ data: { metric: deps.metric } }),
   component: CountriesPage,
 })
 
 function CountriesPage() {
+  const { metric } = Route.useSearch()
   const data = Route.useLoaderData()
+  const navigate = useNavigate({ from: Route.fullPath })
   const countriesWithData = data.countries
   const activeCount = countriesWithData.length
   const topMetricLabel =
     METRICS.find((m) => m.key === data.topMetric)?.label ?? "Agents"
+
+  function setMetric(next: MetricKey) {
+    navigate({ search: (prev) => ({ ...prev, metric: next }) })
+  }
 
   return (
     <div className="min-h-svh">
@@ -62,7 +82,7 @@ function CountriesPage() {
         <div className="flex min-w-0 items-center gap-3 text-sm font-medium">
           <Link
             to="/"
-            search={HOME_SEARCH}
+            search={leaderboardSearch(metric)}
             className="flex min-w-0 items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             <img
@@ -84,7 +104,7 @@ function CountriesPage() {
         <div className="flex items-center gap-3">
           <Link
             to="/"
-            search={HOME_SEARCH}
+            search={leaderboardSearch(metric)}
             className="text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Leaderboard
@@ -99,11 +119,16 @@ function CountriesPage() {
             Country stats
           </h1>
           <p className="text-muted-foreground text-sm">
-            Per-country profiles, top 3 by {topMetricLabel.toLowerCase()} (same
-            default as the main leaderboard), and global rank by total agents
-            across all profiles in that country.
+            Per-country profiles, top 3 by {topMetricLabel.toLowerCase()}, and
+            global country rank by {metricCountryRankPhrase(metric)}.
           </p>
         </div>
+
+        <MetricTabs
+          value={metric}
+          onValueChange={setMetric}
+          aria-label="Country stats metric"
+        />
 
         {activeCount === 0 ? (
           <div className="border-border/60 flex flex-col items-center gap-3 rounded-xl border px-6 py-14 text-center">
@@ -118,7 +143,7 @@ function CountriesPage() {
           <>
             <p className="text-muted-foreground text-xs">
               {activeCount} {activeCount === 1 ? "country" : "countries"} with
-              profiles · tap a card to open that country&apos;s leaderboard
+              profiles
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {countriesWithData.map((stats) => (

@@ -4,7 +4,7 @@ export const SITE = {
     "Community leaderboard for public Cursor profile stats — agents, tokens, and streaks. Join, find your rank, and browse by country.",
   locale: "en_US",
   themeColor: "#14120B",
-  ogImagePath: "/CUBE_2D_DARK.png",
+  ogImagePath: "/leaderboard.jpg",
 } as const
 
 export type HeadMeta = {

@@ -95,6 +95,7 @@ function LeaderboardPage() {
         <div className="flex items-center gap-3">
           <Link
             to="/countries"
+            search={{ metric }}
             className="text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Countries

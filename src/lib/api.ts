@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
 
-import { padLeaderboardEntriesForDev } from "@/lib/pad-leaderboard-entries-for-dev"
 import { handleDbError, isMissingSchemaError } from "@/server/lib/handle-db-error"
 import type { EntryDto } from "@/server/lib/serialize-entry"
 import type { CountryStatsDto } from "@/server/lib/serialize-country-stats"
@@ -96,21 +95,6 @@ export const getLeaderboard = createServerFn({ method: "GET" })
       })
 
       const rankOffset = (page - 1) * limit
-      const serialized = entries.map((entry, index) =>
-        serializeEntry(entry, rankOffset + index + 1),
-      )
-      const paddedEntries = padLeaderboardEntriesForDev(serialized, {
-        page,
-        limit,
-        rankOffset,
-      })
-      const displayTotal =
-        import.meta.env.DEV &&
-        page === 1 &&
-        limit === 100 &&
-        paddedEntries.length > total
-          ? paddedEntries.length
-          : total
 
       return {
         metric: data.metric,
@@ -118,8 +102,10 @@ export const getLeaderboard = createServerFn({ method: "GET" })
         country: data.country ?? null,
         page,
         limit,
-        total: displayTotal,
-        entries: paddedEntries,
+        total,
+        entries: entries.map((entry, index) =>
+          serializeEntry(entry, rankOffset + index + 1),
+        ),
       }
     } catch (error) {
       if (!process.env.DATABASE_URL) {

@@ -261,7 +261,27 @@ const METRIC_SQL_COLUMN: Record<LeaderboardMetric, string> = {
 type CountryAggregateRow = {
   country: string
   profileCount: number
-  totalAgents: number
+  metricTotal: bigint | number
+}
+
+function countryMetricTotal(
+  row: {
+    _sum: { agentsTotal: number | null; tokensTotal: bigint | null }
+    _max: { currentStreakDays: number | null; longestStreakDays: number | null }
+  },
+  metric: CountryStatsMetric,
+): bigint | number {
+  switch (metric) {
+    case "tokens":
+      return row._sum.tokensTotal ?? BigInt(0)
+    case "currentStreak":
+      return row._max.currentStreakDays ?? 0
+    case "longestStreak":
+      return row._max.longestStreakDays ?? 0
+    case "agents":
+    default:
+      return row._sum.agentsTotal ?? 0
+  }
 }
 
 type TopEntryRow = LeaderboardEntry & { rn: number }
@@ -283,7 +303,8 @@ export async function getCountryStats(options: {
       by: ["country"],
       where: { scrapeStatus: "ok" },
       _count: { _all: true },
-      _sum: { agentsTotal: true },
+      _sum: { agentsTotal: true, tokensTotal: true },
+      _max: { currentStreakDays: true, longestStreakDays: true },
     }),
     prisma.$queryRaw<TopEntryRow[]>(Prisma.sql`
       SELECT *
@@ -304,7 +325,7 @@ export async function getCountryStats(options: {
   const aggregates: CountryAggregateRow[] = grouped.map((row) => ({
     country: row.country,
     profileCount: row._count._all,
-    totalAgents: row._sum.agentsTotal ?? 0,
+    metricTotal: countryMetricTotal(row, metric),
   }))
 
   const topByCountry = new Map<string, LeaderboardEntry[]>()
