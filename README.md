@@ -81,9 +81,36 @@ pnpm db:studio          # Browse data in Prisma Studio
 
 Set `VITE_SITE_URL` in `.env` to your production origin (no trailing slash) so canonical URLs, Open Graph, `/robots.txt`, and `/sitemap.xml` use absolute links. Dev builds emit `noindex` automatically.
 
+## Deploy
+
+The app supports **Vercel** (Nitro) and **Netlify** (`@netlify/vite-plugin-tanstack-start`). Set `DEPLOY_TARGET` so the Vite config loads the right host plugin.
+
+| Platform | Build command | Output |
+|----------|---------------|--------|
+| Vercel | `pnpm build:vercel` | `.vercel/output` (via Nitro) |
+| Netlify | `pnpm build:netlify` | `dist/client` |
+
+**Environment variables** (both hosts): `DATABASE_URL`, optional `VITE_SITE_URL`, `SCRAPE_COOLDOWN_MINUTES`, `SCRAPE_USER_AGENT`.
+
+- **Vercel**: `vercel.json` runs `build:vercel`. Add the same env vars in the project settings.
+- **Netlify**: `netlify.toml` runs migrations then `build:netlify`. Requires Netlify CLI ≥ 17.31 for the TanStack Start plugin.
+
+```bash
+# Netlify (preview / production)
+npx netlify deploy
+npx netlify deploy --prod
+
+# Vercel (preview / production)
+npx vercel
+npx vercel --prod
+```
+
+Local dev uses `pnpm dev` without a host plugin.
+
 ## Scripts
 
 - `pnpm dev` — dev server (port 3000)
+- `pnpm build:vercel` / `pnpm build:netlify` — production build for each host
 - `pnpm test` — parser/unit tests
 - `pnpm typecheck` — TypeScript
 

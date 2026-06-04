@@ -1,0 +1,11 @@
+[build]
+  command = "pnpm db:migrate:deploy && pnpm build:netlify"
+  publish = "dist/client"
+
+[dev]
+  command = "pnpm dev"
+  port = 3000
+
+[build.environment]
+  NODE_VERSION = "22"
+  DEPLOY_TARGET = "netlify"

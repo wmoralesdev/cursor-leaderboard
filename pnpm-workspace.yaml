@@ -7,3 +7,5 @@ allowBuilds:
   msw: false
   '@prisma/engines': true
   prisma: true
+  '@parcel/watcher': false
+  sharp: false
