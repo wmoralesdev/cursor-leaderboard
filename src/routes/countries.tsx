@@ -1,11 +1,17 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 
 import { CountryStatsCard } from "@/components/countries/country-stats-card"
+import { CountryStatsToolbar } from "@/components/countries/country-stats-toolbar"
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
-import { MetricTabs } from "@/components/leaderboard/metric-tabs"
-import type { MetricKey } from "@/lib/api"
+import type { SortOrder } from "@/lib/api"
 import { getCountryStats } from "@/lib/api"
-import { METRICS, metricCountryRankPhrase } from "@/lib/format"
+import type { CountryRankBy } from "@/lib/country-rank"
+import { topMetricForRank } from "@/lib/country-rank"
+import {
+  parseCountriesSearch,
+  type CountriesSearch,
+} from "@/lib/countries-search"
+import { METRICS, countryRankDescription } from "@/lib/format"
 import {
   absoluteUrl,
   buildPageHead,
@@ -15,28 +21,17 @@ import {
   websiteJsonLd,
 } from "@/lib/seo"
 
-const METRIC_KEYS: MetricKey[] = [
-  "agents",
-  "tokens",
-  "currentStreak",
-  "longestStreak",
-]
-
-type CountriesSearch = {
-  metric: MetricKey
-}
-
-function leaderboardSearch(metric: MetricKey) {
-  return { metric, order: "desc" as const, page: 1, limit: 100 as const }
+function leaderboardSearch(metric: ReturnType<typeof topMetricForRank>) {
+  return {
+    metric,
+    order: "desc" as const,
+    page: 1,
+    limit: 100 as const,
+  }
 }
 
 export const Route = createFileRoute("/countries")({
-  validateSearch: (search: Record<string, unknown>): CountriesSearch => {
-    const metric = METRIC_KEYS.includes(search.metric as MetricKey)
-      ? (search.metric as MetricKey)
-      : "agents"
-    return { metric }
-  },
+  validateSearch: parseCountriesSearch,
   head: () => {
     const origin = getSiteOrigin()
     const description =
@@ -58,13 +53,14 @@ export const Route = createFileRoute("/countries")({
       ],
     })
   },
-  loaderDeps: ({ search }) => ({ metric: search.metric }),
-  loader: ({ deps }) => getCountryStats({ data: { metric: deps.metric } }),
+  loaderDeps: ({ search }) => parseCountriesSearch(search as Record<string, unknown>),
+  loader: ({ deps }) =>
+    getCountryStats({ data: { rankBy: deps.rankBy, order: deps.order } }),
   component: CountriesPage,
 })
 
 function CountriesPage() {
-  const { metric } = Route.useSearch()
+  const { rankBy, order } = Route.useSearch()
   const data = Route.useLoaderData()
   const navigate = useNavigate({ from: Route.fullPath })
   const countriesWithData = data.countries
@@ -72,8 +68,12 @@ function CountriesPage() {
   const topMetricLabel =
     METRICS.find((m) => m.key === data.topMetric)?.label ?? "Agents"
 
-  function setMetric(next: MetricKey) {
-    navigate({ search: (prev) => ({ ...prev, metric: next }) })
+  function setRankBy(next: CountryRankBy) {
+    navigate({ search: (prev: CountriesSearch) => ({ ...prev, rankBy: next }) })
+  }
+
+  function setOrder(next: SortOrder) {
+    navigate({ search: (prev: CountriesSearch) => ({ ...prev, order: next }) })
   }
 
   return (
@@ -82,7 +82,7 @@ function CountriesPage() {
         <div className="flex min-w-0 items-center gap-3 text-sm font-medium">
           <Link
             to="/"
-            search={leaderboardSearch(metric)}
+            search={leaderboardSearch(topMetricForRank(rankBy))}
             className="flex min-w-0 items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
           >
             <img
@@ -104,7 +104,7 @@ function CountriesPage() {
         <div className="flex items-center gap-3">
           <Link
             to="/"
-            search={leaderboardSearch(metric)}
+            search={leaderboardSearch(topMetricForRank(rankBy))}
             className="text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             Leaderboard
@@ -119,15 +119,16 @@ function CountriesPage() {
             Country stats
           </h1>
           <p className="text-muted-foreground text-sm">
-            Per-country profiles, top 3 by {topMetricLabel.toLowerCase()}, and
-            global country rank by {metricCountryRankPhrase(metric)}.
+            {countryRankDescription(rankBy)} Top three per country by{" "}
+            {topMetricLabel.toLowerCase()}.
           </p>
         </div>
 
-        <MetricTabs
-          value={metric}
-          onValueChange={setMetric}
-          aria-label="Country stats metric"
+        <CountryStatsToolbar
+          rankBy={rankBy}
+          order={order}
+          onRankByChange={setRankBy}
+          onOrderChange={setOrder}
         />
 
         {activeCount === 0 ? (
@@ -151,7 +152,8 @@ function CountriesPage() {
                   key={stats.country}
                   countryCode={stats.country}
                   stats={stats}
-                  metric={data.metric}
+                  topMetric={data.topMetric}
+                  order={order}
                 />
               ))}
             </div>

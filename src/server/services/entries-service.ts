@@ -10,7 +10,11 @@ import type {
   LeaderboardMetric,
   SortOrder,
 } from "@/server/validation/entry-schemas"
-import type { CountryStatsMetric } from "@/server/validation/country-stats-schemas"
+import { COUNTRY_RANK_PROFILES } from "@/lib/country-rank"
+import type {
+  CountryStatsMetric,
+  CountryStatsQuery,
+} from "@/server/validation/country-stats-schemas"
 
 export class RefreshCooldownError extends Error {
   readonly retryAfterSeconds: number
@@ -261,7 +265,7 @@ const METRIC_SQL_COLUMN: Record<LeaderboardMetric, string> = {
 type CountryAggregateRow = {
   country: string
   profileCount: number
-  metricTotal: bigint | number
+  metricTotal?: bigint | number
 }
 
 function countryMetricTotal(
@@ -287,16 +291,24 @@ function countryMetricTotal(
 type TopEntryRow = LeaderboardEntry & { rn: number }
 
 export type CountryStatsResult = {
-  metric: CountryStatsMetric
+  rankBy: CountryStatsQuery["rankBy"]
+  order: CountryStatsQuery["order"]
   aggregates: CountryAggregateRow[]
   topByCountry: Map<string, LeaderboardEntry[]>
 }
 
-export async function getCountryStats(options: {
-  metric?: CountryStatsMetric
-}): Promise<CountryStatsResult> {
-  const metric = options.metric ?? "agents"
-  const orderColumn = METRIC_SQL_COLUMN[metric]
+export async function getCountryStats(
+  options: CountryStatsQuery = {
+    rankBy: COUNTRY_RANK_PROFILES,
+    order: "desc",
+  },
+): Promise<CountryStatsResult> {
+  const rankBy = options.rankBy ?? COUNTRY_RANK_PROFILES
+  const order = options.order ?? "desc"
+  const topMetric =
+    rankBy === COUNTRY_RANK_PROFILES ? ("agents" as const) : rankBy
+  const orderColumn = METRIC_SQL_COLUMN[topMetric]
+  const rankByMetric = rankBy !== COUNTRY_RANK_PROFILES ? rankBy : null
 
   const [grouped, topRows] = await Promise.all([
     prisma.leaderboardEntry.groupBy({
@@ -325,7 +337,9 @@ export async function getCountryStats(options: {
   const aggregates: CountryAggregateRow[] = grouped.map((row) => ({
     country: row.country,
     profileCount: row._count._all,
-    metricTotal: countryMetricTotal(row, metric),
+    ...(rankByMetric
+      ? { metricTotal: countryMetricTotal(row, rankByMetric) }
+      : {}),
   }))
 
   const topByCountry = new Map<string, LeaderboardEntry[]>()
@@ -338,7 +352,7 @@ export async function getCountryStats(options: {
 
   for (const list of topByCountry.values()) {
     list.sort((a, b) => {
-      const field = metricField(metric)
+      const field = metricField(topMetric)
       const av = a[field]
       const bv = b[field]
       if (typeof av === "bigint" && typeof bv === "bigint") {
@@ -348,5 +362,5 @@ export async function getCountryStats(options: {
     })
   }
 
-  return { metric, aggregates, topByCountry }
+  return { rankBy, order, aggregates, topByCountry }
 }

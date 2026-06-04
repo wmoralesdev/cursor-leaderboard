@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 
-import type { CountryStatsItemDto, EntryDto, MetricKey } from "@/lib/api"
+import type { CountryStatsItemDto, EntryDto, MetricKey, SortOrder } from "@/lib/api"
 import { countryByCode } from "@/lib/countries"
 import { METRICS, formatInt, formatMetricValue } from "@/lib/format"
 import { rankBadgeClasses } from "@/lib/rank-classes"
@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils"
 type CountryStatsCardProps = {
   countryCode: string
   stats: CountryStatsItemDto
-  metric: MetricKey
+  topMetric: MetricKey
+  order: SortOrder
 }
 
 function topEntryDto(
@@ -45,11 +46,12 @@ function topEntryDto(
 function CountryStatsCard({
   countryCode,
   stats,
-  metric,
+  topMetric,
+  order,
 }: CountryStatsCardProps) {
   const meta = countryByCode(countryCode)
   const countryName = meta?.name ?? countryCode
-  const MetricIcon = METRICS.find((m) => m.key === metric)?.icon
+  const MetricIcon = METRICS.find((m) => m.key === topMetric)?.icon
   const isTopCountry = stats.globalRank === 1
 
   return (
@@ -57,17 +59,13 @@ function CountryStatsCard({
       to="/"
       search={{
         country: countryCode,
-        metric,
-        order: "desc",
+        metric: topMetric,
+        order,
         page: 1,
         limit: 100,
       }}
       aria-label={`Open ${countryName} leaderboard`}
-      className={cn(
-        "group bg-card flex flex-col rounded-xl border p-4 outline-none transition-colors",
-        "hover:bg-muted/20 focus-visible:ring-ring/30 focus-visible:ring-2",
-        isTopCountry ? "border-brand/30" : "border-border/60 hover:border-border"
-      )}
+      className="group bg-card border-border/60 hover:border-border flex flex-col rounded-xl border p-4 outline-none transition-colors hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring/30"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
@@ -99,7 +97,7 @@ function CountryStatsCard({
         <ul className="divide-border/50 border-border/50 mt-3 flex flex-col divide-y border-t">
           {stats.topThree.map((top) => {
             const entry = topEntryDto(top, countryCode)
-            const value = formatMetricValue(metric, entry)
+            const value = formatMetricValue(topMetric, entry)
             return (
               <li
                 key={top.handle}

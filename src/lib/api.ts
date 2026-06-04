@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start"
 
 import { handleDbError, isMissingSchemaError } from "@/server/lib/handle-db-error"
-import type { EntryDto } from "@/server/lib/serialize-entry"
+import type { CountryRankBy } from "@/lib/country-rank"
 import type { CountryStatsDto } from "@/server/lib/serialize-country-stats"
+import type { EntryDto } from "@/server/lib/serialize-entry"
 
 export type { EntryDto }
 export type { CountryStatsDto, CountryStatsItemDto, CountryTopEntryDto } from "@/server/lib/serialize-country-stats"
@@ -32,7 +33,7 @@ export type SubmitResult = {
 
 export const getCountryStats = createServerFn({ method: "GET" })
   .inputValidator(
-    (input: { metric?: MetricKey }) => input,
+    (input: { rankBy?: CountryRankBy; order?: SortOrder }) => input,
   )
   .handler(async ({ data }): Promise<CountryStatsDto> => {
     const { getCountryStats: fetchCountryStats } = await import(
@@ -43,8 +44,10 @@ export const getCountryStats = createServerFn({ method: "GET" })
     )
 
     try {
-      const metric = data.metric ?? "agents"
-      const result = await fetchCountryStats({ metric })
+      const { COUNTRY_RANK_PROFILES } = await import("@/lib/country-rank")
+      const rankBy = data.rankBy ?? COUNTRY_RANK_PROFILES
+      const order = data.order ?? "desc"
+      const result = await fetchCountryStats({ rankBy, order })
       return buildCountryStatsDto(result)
     } catch (error) {
       if (!process.env.DATABASE_URL) {

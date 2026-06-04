@@ -1,5 +1,10 @@
 import type { LeaderboardEntry } from "@/generated/prisma/client"
-import type { LeaderboardMetric } from "@/server/validation/entry-schemas"
+import type { CountryRankBy } from "@/lib/country-rank"
+import { COUNTRY_RANK_PROFILES, topMetricForRank } from "@/lib/country-rank"
+import type {
+  LeaderboardMetric,
+  SortOrder,
+} from "@/server/validation/entry-schemas"
 
 export type CountryTopEntryDto = {
   rank: number
@@ -15,16 +20,13 @@ export type CountryTopEntryDto = {
 export type CountryStatsItemDto = {
   country: string
   profileCount: number
-  /** Country-level aggregate for global rank (sum for agents/tokens, max for streaks). */
-  metricTotal: string
   globalRank: number | null
   topThree: CountryTopEntryDto[]
 }
 
 export type CountryStatsDto = {
-  metric: LeaderboardMetric
-  /** Metric used to order countries globally and for in-country top 3. */
-  globalRankBy: LeaderboardMetric
+  rankBy: CountryRankBy
+  order: SortOrder
   topMetric: LeaderboardMetric
   countries: CountryStatsItemDto[]
 }
@@ -63,32 +65,61 @@ export function serializeCountryTopEntry(
 export type CountryAggregate = {
   country: string
   profileCount: number
-  metricTotal: bigint | number
+  metricTotal?: bigint | number
 }
 
-function compareMetricTotals(a: bigint | number, b: bigint | number): number {
+function compareMetricTotals(
+  a: bigint | number,
+  b: bigint | number,
+  order: SortOrder,
+): number {
+  let diff: number
   if (typeof a === "bigint" && typeof b === "bigint") {
-    return b > a ? 1 : b < a ? -1 : 0
+    diff = a > b ? 1 : a < b ? -1 : 0
+  } else {
+    diff = Number(a) - Number(b)
   }
-  return Number(b) - Number(a)
+  if (diff !== 0) return order === "asc" ? diff : -diff
+  return 0
 }
 
-function serializeMetricTotal(value: bigint | number): string {
-  return typeof value === "bigint" ? value.toString() : String(value)
+function compareByProfileCount(
+  a: CountryAggregate,
+  b: CountryAggregate,
+  order: SortOrder,
+): number {
+  const diff = a.profileCount - b.profileCount
+  if (diff !== 0) return order === "asc" ? diff : -diff
+  return a.country.localeCompare(b.country)
+}
+
+function compareCountries(
+  a: CountryAggregate,
+  b: CountryAggregate,
+  rankBy: CountryRankBy,
+  order: SortOrder,
+): number {
+  if (rankBy === COUNTRY_RANK_PROFILES) {
+    return compareByProfileCount(a, b, order)
+  }
+  const aTotal = a.metricTotal ?? 0
+  const bTotal = b.metricTotal ?? 0
+  const byMetric = compareMetricTotals(aTotal, bTotal, order)
+  if (byMetric !== 0) return byMetric
+  return compareByProfileCount(a, b, "desc")
 }
 
 export function buildCountryStatsDto(input: {
-  metric: LeaderboardMetric
+  rankBy: CountryRankBy
+  order: SortOrder
   aggregates: CountryAggregate[]
   topByCountry: Map<string, LeaderboardEntry[]>
 }): CountryStatsDto {
+  const topMetric = topMetricForRank(input.rankBy)
+
   const ranked = [...input.aggregates]
     .filter((a) => a.profileCount > 0)
-    .sort((a, b) => {
-      const byMetric = compareMetricTotals(b.metricTotal, a.metricTotal)
-      if (byMetric !== 0) return byMetric
-      return b.profileCount - a.profileCount
-    })
+    .sort((a, b) => compareCountries(a, b, input.rankBy, input.order))
 
   const globalRankByCode = new Map(
     ranked.map((row, index) => [row.country, index + 1]),
@@ -99,18 +130,17 @@ export function buildCountryStatsDto(input: {
     return {
       country: agg.country,
       profileCount: agg.profileCount,
-      metricTotal: serializeMetricTotal(agg.metricTotal),
       globalRank: globalRankByCode.get(agg.country) ?? null,
       topThree: topEntries.map((entry, index) =>
-        serializeCountryTopEntry(entry, index + 1, input.metric),
+        serializeCountryTopEntry(entry, index + 1, topMetric),
       ),
     }
   })
 
   return {
-    metric: input.metric,
-    globalRankBy: input.metric,
-    topMetric: input.metric,
+    rankBy: input.rankBy,
+    order: input.order,
+    topMetric,
     countries,
   }
 }

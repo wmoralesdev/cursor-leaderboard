@@ -11,7 +11,8 @@ export const Route = createFileRoute("/api/countries/stats")({
       GET: async ({ request }) => {
         const url = new URL(request.url)
         const parsed = countryStatsQuerySchema.safeParse({
-          metric: url.searchParams.get("metric") ?? undefined,
+          rankBy: url.searchParams.get("rankBy") ?? undefined,
+          order: url.searchParams.get("order") ?? undefined,
         })
 
         if (!parsed.success) {
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/api/countries/stats")({
         }
 
         try {
-          const result = await getCountryStats({ metric: parsed.data.metric })
+          const result = await getCountryStats(parsed.data)
           return jsonResponse(buildCountryStatsDto(result))
         } catch (error) {
           const dbError = handleDbError(error)

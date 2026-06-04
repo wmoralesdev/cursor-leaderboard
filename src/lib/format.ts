@@ -1,6 +1,8 @@
 import { Bot, Coins, Flame, type LucideIcon, TrendingUp } from "lucide-react"
 
 import type { EntryDto, MetricKey } from "@/lib/api"
+import type { CountryRankBy } from "@/lib/country-rank"
+import { COUNTRY_RANK_PROFILES } from "@/lib/country-rank"
 
 export type MetricMeta = {
   key: MetricKey
@@ -63,6 +65,23 @@ export function formatMetricValue(metric: MetricKey, entry: EntryDto): string {
   }
 }
 
+export function countryRankDescription(rankBy: CountryRankBy): string {
+  if (rankBy === COUNTRY_RANK_PROFILES) {
+    return "Countries ranked by how many profiles joined from each country."
+  }
+  switch (rankBy) {
+    case "tokens":
+      return "Countries ranked by combined tokens across profiles in each country."
+    case "currentStreak":
+      return "Countries ranked by the highest current streak in each country."
+    case "longestStreak":
+      return "Countries ranked by the longest streak in each country."
+    case "agents":
+    default:
+      return "Countries ranked by total agents across profiles in each country."
+  }
+}
+
 export function metricUnitLabel(metric: MetricKey): string {
   switch (metric) {
     case "tokens":
@@ -76,16 +95,3 @@ export function metricUnitLabel(metric: MetricKey): string {
   }
 }
 
-export function metricCountryRankPhrase(metric: MetricKey): string {
-  switch (metric) {
-    case "tokens":
-      return "combined tokens across profiles in each country"
-    case "currentStreak":
-      return "highest current streak in each country"
-    case "longestStreak":
-      return "longest streak in each country"
-    case "agents":
-    default:
-      return "total agents across profiles in each country"
-  }
-}
