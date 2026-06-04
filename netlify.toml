@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm db:migrate:deploy && pnpm build:netlify"
+  command = "pnpm build:netlify"
   publish = "dist/client"
 
 [dev]
@@ -10,4 +10,3 @@
   NODE_VERSION = "22"
   DEPLOY_TARGET = "netlify"
   # DATABASE_URL — Neon pooled connection (set in Netlify UI)
-  # DIRECT_URL — optional; migrations use direct URL (derived from DATABASE_URL if omitted)

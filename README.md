@@ -93,7 +93,7 @@ The app supports **Vercel** (Nitro) and **Netlify** (`@netlify/vite-plugin-tanst
 **Environment variables** (both hosts): `DATABASE_URL` (Neon pooled URL for runtime), optional `DIRECT_URL` (direct Neon URL for Prisma CLI — auto-derived from pooled `DATABASE_URL` on Netlify builds), optional `VITE_SITE_URL`, `SCRAPE_COOLDOWN_MINUTES`, `SCRAPE_USER_AGENT`.
 
 - **Vercel**: `vercel.json` runs `build:vercel`. Add the same env vars in the project settings.
-- **Netlify**: `netlify.toml` runs migrations then `build:netlify`. Requires Netlify CLI ≥ 17.31 for the TanStack Start plugin.
+- **Netlify**: `netlify.toml` runs `build:netlify` only. Apply schema changes locally with `pnpm db:migrate:deploy` before deploy. Requires Netlify CLI ≥ 17.31 for the TanStack Start plugin.
 
 ```bash
 # Netlify (preview / production)
