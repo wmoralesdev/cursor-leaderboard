@@ -15,7 +15,7 @@ export function parseTokenCount(raw: string): bigint | null {
   const numericPart = Number(match[1])
   if (!Number.isFinite(numericPart) || numericPart < 0) return null
 
-  const suffix = match[2]?.toUpperCase()
+  const suffix = match[2] ? match[2].toUpperCase() : undefined
   const multiplier = suffix ? (SUFFIX_MULTIPLIERS[suffix] ?? 1n) : 1n
   const scaled = BigInt(Math.round(numericPart * 1000)) * multiplier / 1000n
 

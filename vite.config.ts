@@ -23,10 +23,10 @@ export default defineConfig(({ mode }) => {
     // Server secrets must stay runtime-only — do not `define` DATABASE_URL.
     define: {
       "process.env.SCRAPE_COOLDOWN_MINUTES": JSON.stringify(
-        env.SCRAPE_COOLDOWN_MINUTES ?? "15",
+        env.SCRAPE_COOLDOWN_MINUTES || "15",
       ),
       "process.env.SCRAPE_USER_AGENT": JSON.stringify(
-        env.SCRAPE_USER_AGENT ?? "",
+        env.SCRAPE_USER_AGENT || "",
       ),
     },
     resolve: {

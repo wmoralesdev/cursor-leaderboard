@@ -10,9 +10,10 @@ import { getLeaderboard } from "@/lib/api"
 import { countryByCode } from "@/lib/countries"
 import {
   buildLeaderboardHead,
-  parseLeaderboardSearch,
-  type LeaderboardSeoSearch,
+  parseLeaderboardSearch
+  
 } from "@/lib/leaderboard-seo"
+import type {LeaderboardSeoSearch} from "@/lib/leaderboard-seo";
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
 import { LeaderboardPagination } from "@/components/leaderboard/leaderboard-pagination"
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/")({
   head: ({ match }) =>
     buildLeaderboardHead(
       parseLeaderboardSearch(
-        (match.search ?? {}) as Record<string, unknown>,
+        match.search as Record<string, unknown>,
       ),
     ),
   loaderDeps: ({ search }): LeaderboardSeoSearch =>
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/")({
 
 function LeaderboardPage() {
   const { metric, order, country, page, limit } = Route.useSearch()
-  const data = Route.useLoaderData() as LeaderboardResult
+  const data = Route.useLoaderData()
   const navigate = useNavigate({ from: Route.fullPath })
 
   function setMetric(next: MetricKey) {

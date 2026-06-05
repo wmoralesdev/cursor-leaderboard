@@ -1,4 +1,13 @@
 import type { LeaderboardPageSize, MetricKey, SortOrder } from "@/lib/api"
+import { countryByCode } from "@/lib/countries"
+import {
+  absoluteUrl,
+  buildPageHead,
+  formatTitle,
+  getSiteOrigin,
+  SITE,
+  websiteJsonLd,
+} from "@/lib/seo"
 
 const METRIC_KEYS: MetricKey[] = [
   "agents",
@@ -46,15 +55,6 @@ export function parseLeaderboardSearch(
   const base = { metric, order, page, limit }
   return country ? { ...base, country } : base
 }
-import { countryByCode } from "@/lib/countries"
-import {
-  absoluteUrl,
-  buildPageHead,
-  formatTitle,
-  getSiteOrigin,
-  SITE,
-  websiteJsonLd,
-} from "@/lib/seo"
 
 export type LeaderboardSeoSearch = {
   metric: MetricKey

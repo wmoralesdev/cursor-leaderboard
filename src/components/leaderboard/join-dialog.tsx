@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useRouter } from "@tanstack/react-router"
 import { CheckCircle2, Plus } from "lucide-react"
 
-import { type SubmitResult, submitEntry } from "@/lib/api"
+import {  submitEntry } from "@/lib/api"
+import type {SubmitResult} from "@/lib/api";
 import { countryByCode } from "@/lib/countries"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"

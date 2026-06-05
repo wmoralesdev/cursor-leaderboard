@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react"
 
 import {
-  type LeaderboardPageSize,
-  type MetricKey,
-  type SearchResult,
-  type SortOrder,
-  searchLeaderboard,
+  
+  
+  
+  
+  searchLeaderboard
 } from "@/lib/api"
+import type {LeaderboardPageSize, MetricKey, SearchResult, SortOrder} from "@/lib/api";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_LENGTH } from "@/lib/search"
 
 type UseLeaderboardSearchOptions = {

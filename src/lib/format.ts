@@ -1,4 +1,5 @@
-import { Bot, Coins, Flame, type LucideIcon, TrendingUp } from "lucide-react"
+import { Bot, Coins, Flame,  TrendingUp } from "lucide-react"
+import type {LucideIcon} from "lucide-react";
 
 import type { EntryDto, MetricKey } from "@/lib/api"
 import type { CountryRankBy } from "@/lib/country-rank"

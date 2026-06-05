@@ -1,9 +1,10 @@
 import type { SortOrder } from "@/lib/api"
 import {
-  type CountryRankBy,
+  
   COUNTRY_RANK_PROFILES,
-  isCountryRankBy,
+  isCountryRankBy
 } from "@/lib/country-rank"
+import type {CountryRankBy} from "@/lib/country-rank";
 
 const SORT_ORDERS: SortOrder[] = ["asc", "desc"]
 

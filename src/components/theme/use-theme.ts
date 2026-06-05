@@ -3,9 +3,10 @@ import { useCallback, useEffect, useState } from "react"
 import {
   applyThemePreference,
   readStoredTheme,
-  writeStoredTheme,
-  type ThemePreference,
+  writeStoredTheme
+  
 } from "@/lib/theme"
+import type {ThemePreference} from "@/lib/theme";
 
 function useTheme() {
   const [preference, setPreferenceState] = useState<ThemePreference>("system")

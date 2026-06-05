@@ -9,9 +9,10 @@ import { getCountryStats } from "@/lib/api"
 import type { CountryRankBy } from "@/lib/country-rank"
 import { topMetricForRank } from "@/lib/country-rank"
 import {
-  parseCountriesSearch,
-  type CountriesSearch,
+  parseCountriesSearch
+  
 } from "@/lib/countries-search"
+import type {CountriesSearch} from "@/lib/countries-search";
 import { METRICS, countryRankDescription } from "@/lib/format"
 import {
   absoluteUrl,

@@ -1,8 +1,9 @@
 import { profileUrlForHandle } from "@/server/lib/normalize-handle"
 import {
-  parseCursorProfileHtml,
-  type CursorProfileStats,
+  parseCursorProfileHtml
+  
 } from "@/server/lib/parse-cursor-profile"
+import type {CursorProfileStats} from "@/server/lib/parse-cursor-profile";
 
 export type ScrapeProfileResult =
   | { status: "ok"; stats: CursorProfileStats }

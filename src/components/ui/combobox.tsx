@@ -1,7 +1,8 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox"
 import { Check, ChevronsUpDown } from "lucide-react"
 
-import { type Country, COUNTRIES, countryByCode } from "@/lib/countries"
+import {  COUNTRIES, countryByCode } from "@/lib/countries"
+import type {Country} from "@/lib/countries";
 import { cn } from "@/lib/utils"
 
 type CountryComboboxProps = {

@@ -66,7 +66,7 @@ function extractTopModels(html: string): string[] {
 
   const titleMatches = section.matchAll(/title="([^"]+)"/g)
   for (const match of titleMatches) {
-    const name = match[1]?.trim()
+    const name = match[1].trim()
     if (!name || models.includes(name)) continue
     if (/composer|claude|gpt|gemini|sonnet|opus|auto/i.test(name)) {
       models.push(name)
