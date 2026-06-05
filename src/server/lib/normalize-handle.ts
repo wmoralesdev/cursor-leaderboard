@@ -1,4 +1,4 @@
-const HANDLE_PATTERN = /^[a-zA-Z0-9_]{1,39}$/
+const HANDLE_PATTERN = /^[a-zA-Z0-9_-]{1,39}$/
 
 export class InvalidHandleError extends Error {
   constructor(message: string) {
@@ -34,7 +34,9 @@ export function normalizeHandle(input: string): string {
   candidate = candidate.toLowerCase()
 
   if (!HANDLE_PATTERN.test(candidate)) {
-    throw new InvalidHandleError("Handle must be 1–39 alphanumeric characters or underscores")
+    throw new InvalidHandleError(
+      "Handle must be 1–39 alphanumeric characters, underscores, or dashes",
+    )
   }
 
   return candidate
