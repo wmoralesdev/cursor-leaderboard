@@ -60,6 +60,7 @@ export const COUNTRIES: Country[] = [
   { code: "PL", name: "Poland", flag: "🇵🇱" },
   { code: "PT", name: "Portugal", flag: "🇵🇹" },
   { code: "RO", name: "Romania", flag: "🇷🇴" },
+  { code: "RW", name: "Rwanda", flag: "🇷🇼" },
   { code: "SA", name: "Saudi Arabia", flag: "🇸🇦" },
   { code: "RS", name: "Serbia", flag: "🇷🇸" },
   { code: "SG", name: "Singapore", flag: "🇸🇬" },
