@@ -7,7 +7,6 @@ import { prisma } from "@/server/db/prisma"
 import {
   extractSearchTerm,
   matchCountryCodes,
-  matchScore,
   SEARCH_MAX_RESULTS,
   SEARCH_MIN_LENGTH,
 } from "@/server/lib/normalize-search-query"
@@ -413,19 +412,12 @@ export async function searchEntries(options: {
       ...scopeWhere,
       OR: orFilters,
     },
-    take: 75,
+    orderBy: orderByForMetric(options.metric, order),
+    take: maxResults,
   })
 
-  const rankedCandidates = candidates
-    .map((entry) => ({
-      entry,
-      score: matchScore(entry, handleTerm, rawQuery, matchedCountryCodes),
-    }))
-    .sort((a, b) => a.score - b.score)
-    .slice(0, maxResults)
-
   const results = await Promise.all(
-    rankedCandidates.map(async ({ entry }) => {
+    candidates.map(async (entry) => {
       const rank = await getListPositionForEntry(
         entry,
         options.metric,
@@ -532,8 +524,8 @@ export async function getCountryStats(
     order: "desc",
   },
 ): Promise<CountryStatsResult> {
-  const rankBy = options.rankBy ?? COUNTRY_RANK_PROFILES
-  const order = options.order ?? "desc"
+  const rankBy = options.rankBy
+  const order = options.order
   const topMetric =
     rankBy === COUNTRY_RANK_PROFILES ? ("agents" as const) : rankBy
   const orderColumn = METRIC_SQL_COLUMN[topMetric]
