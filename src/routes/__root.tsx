@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 
 import { SITE } from "@/lib/seo"
+import { THEME_INIT_SCRIPT } from "@/lib/theme"
 
 import appCss from "../styles.css?url"
 
@@ -16,7 +17,7 @@ export const Route = createRootRoute({
       },
       { name: "theme-color", content: SITE.themeColor },
       { name: "application-name", content: SITE.name },
-      { name: "color-scheme", content: "dark" },
+      { name: "color-scheme", content: "dark light" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -45,8 +46,9 @@ function NotFoundPage() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
       <body>

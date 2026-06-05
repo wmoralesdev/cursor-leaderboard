@@ -17,6 +17,7 @@ import { JoinDialog } from "@/components/leaderboard/join-dialog"
 import { LeaderboardPagination } from "@/components/leaderboard/leaderboard-pagination"
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
 import { LeaderboardToolbar } from "@/components/leaderboard/leaderboard-toolbar"
+import { ThemeToggle } from "@/components/theme/theme-toggle"
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): LeaderboardSeoSearch =>
@@ -93,6 +94,7 @@ function LeaderboardPage() {
           <span className="truncate">Cursor Leaderboard</span>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link
             to="/countries"
             search={{ rankBy: "profiles", order: "desc" }}

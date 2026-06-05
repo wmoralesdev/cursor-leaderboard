@@ -6,13 +6,13 @@ colors:
   brand-foreground: "#ffffff"
   chrome-bg: "#14120B"
   surface-card: "#1C1914"
-  luminous-text: "#e4e4e4"
+  luminous-text: "#f7f7f4"
   info-blue: "#5da1e5"
   success-green: "#3fa266"
   warning-amber: "#f1b467"
   destructive-rose: "#e34671"
-  border-subtle: "#e4e4e41a"
-  muted-text: "#e4e4e4b3"
+  border-subtle: "#f7f7f41a"
+  muted-text: "#f7f7f4b3"
 typography:
   display:
     fontFamily: "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif"
@@ -79,7 +79,7 @@ components:
     rounded: "{rounded.xl}"
     padding: "0"
   input-default:
-    backgroundColor: "#e4e4e41f"
+    backgroundColor: "#f7f7f41f"
     textColor: "{colors.luminous-text}"
     rounded: "{rounded.md}"
     height: "32px"
@@ -118,7 +118,7 @@ A near-monochrome dark tooling palette with one committed accent. Neutrals are t
 ### Primary
 
 - **Cursor Brand Orange** (#f54e00): Reserved for optional logo-adjacent marks only, not primary UI actions.
-- **Primary Action** (#e4e4e4 on #14120b): Join leaderboard and rank #1 badge use luminous fill with warm dark text, matching cursor.com landing CTAs.
+- **Primary Action** (#f7f7f4 on #14120b): Join leaderboard and rank #1 badge use luminous fill with warm dark text, matching cursor.com landing CTAs.
 - **Brand Foreground** (#ffffff): Text on orange surfaces.
 
 ### Secondary
@@ -135,9 +135,9 @@ A near-monochrome dark tooling palette with one committed accent. Neutrals are t
 
 - **Chrome Background** (#14120B): Page canvas, sticky header backdrop.
 - **Surface Card** (#1C1914): Cards, popovers, active toggle segments.
-- **Luminous Text** (#e4e4e4 at ~94% mix): Primary foreground on dark surfaces.
-- **Muted Text** (#e4e4e4 at ~70% mix): Secondary lines, unit labels, placeholders.
-- **Border Subtle** (#e4e4e4 at ~10% mix): Dividers, card borders, input strokes.
+- **Luminous Text** (#f7f7f4 at ~94% mix): Primary foreground on dark surfaces.
+- **Muted Text** (#f7f7f4 at ~70% mix): Secondary lines, unit labels, placeholders.
+- **Border Subtle** (#f7f7f4 at ~10% mix): Dividers, card borders, input strokes.
 
 ### Named Rules
 
@@ -184,7 +184,7 @@ Depth is conveyed primarily through tonal layering: `#141414` canvas → `#18181
 ### Buttons
 
 - **Shape:** Pill (`rounded-full`), compact height 28px (`h-7`).
-- **Primary (default):** Luminous fill (#e4e4e4), warm dark text (#14120b), hover at 80% opacity.
+- **Primary (default):** Luminous fill (#f7f7f4), warm dark text (#14120b), hover at 80% opacity.
 - **Ghost / outline:** Transparent or bordered pills, muted text, hover fills with muted surface.
 - **Focus:** 2px ring using info blue at 30% opacity.
 
@@ -234,7 +234,7 @@ Depth is conveyed primarily through tonal layering: `#141414` canvas → `#18181
 
 ### Do:
 
-- **Do** use white pill primary buttons (#e4e4e4 on #14120b) for join and confirm actions.
+- **Do** use white pill primary buttons (#f7f7f4 on #14120b) for join and confirm actions.
 - **Do** keep the warm dark chrome (#14120B / #1C1914) as the canonical theme.
 - **Do** show rank as a numeral in a small badge; color supports but never replaces the number.
 - **Do** use compact 13px body type and tight list rows for scannable rankings.

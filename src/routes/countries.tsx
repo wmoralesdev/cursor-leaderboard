@@ -3,6 +3,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { CountryStatsCard } from "@/components/countries/country-stats-card"
 import { CountryStatsToolbar } from "@/components/countries/country-stats-toolbar"
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
+import { ThemeToggle } from "@/components/theme/theme-toggle"
 import type { SortOrder } from "@/lib/api"
 import { getCountryStats } from "@/lib/api"
 import type { CountryRankBy } from "@/lib/country-rank"
@@ -102,6 +103,7 @@ function CountriesPage() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link
             to="/"
             search={leaderboardSearch(topMetricForRank(rankBy))}

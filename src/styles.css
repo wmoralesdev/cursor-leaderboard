@@ -38,7 +38,7 @@
 
 /*
  * Design system ported from cursor.com (@wmoralesdev profile).
- * Luminous #E4E4E4 on warm near-black chrome #14120B; orange reserved for rare accents.
+ * Luminous #F7F7F4 on warm near-black chrome #14120B; orange reserved for rare accents.
  * Token values are kept faithful to the source rather than re-derived.
  */
 @theme inline {
@@ -161,25 +161,25 @@
 /* Canonical Cursor dark theme (cursor.com landing warm chrome) */
 .dark {
     --background: #14120b;
-    --foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
+    --foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
     --card: #1c1914;
-    --card-foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
+    --card-foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
     --popover: #1c1914;
-    --popover-foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
+    --popover-foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
 
-    --primary: #e4e4e4;
+    --primary: #f7f7f4;
     --primary-foreground: #14120b;
-    --secondary: color-mix(in oklab, #e4e4e4 8%, transparent);
-    --secondary-foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
-    --muted: color-mix(in oklab, #e4e4e4 6%, transparent);
-    --muted-foreground: color-mix(in oklab, #e4e4e4 70%, transparent);
-    --accent: color-mix(in oklab, #e4e4e4 8%, transparent);
-    --accent-foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
+    --secondary: color-mix(in oklab, #f7f7f4 8%, transparent);
+    --secondary-foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
+    --muted: color-mix(in oklab, #f7f7f4 6%, transparent);
+    --muted-foreground: color-mix(in oklab, #f7f7f4 70%, transparent);
+    --accent: color-mix(in oklab, #f7f7f4 8%, transparent);
+    --accent-foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
 
     --destructive: #e34671;
     --destructive-foreground: #1c1914;
-    --border: color-mix(in oklab, #e4e4e4 10%, transparent);
-    --input: color-mix(in oklab, #e4e4e4 12%, transparent);
+    --border: color-mix(in oklab, #f7f7f4 10%, transparent);
+    --input: color-mix(in oklab, #f7f7f4 12%, transparent);
     --ring: #5da1e5;
 
     --brand: #f54e00;
@@ -191,19 +191,19 @@
     --info: #5da1e5;
     --info-foreground: #1c1914;
 
-    --chart-1: #e4e4e4;
+    --chart-1: #f7f7f4;
     --chart-2: #5da1e5;
     --chart-3: #3fa266;
     --chart-4: #b48ead;
     --chart-5: #d08770;
 
     --sidebar: #14120b;
-    --sidebar-foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
-    --sidebar-primary: #e4e4e4;
+    --sidebar-foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
+    --sidebar-primary: #f7f7f4;
     --sidebar-primary-foreground: #1c1914;
-    --sidebar-accent: color-mix(in oklab, #e4e4e4 8%, transparent);
-    --sidebar-accent-foreground: color-mix(in oklab, #e4e4e4 94%, transparent);
-    --sidebar-border: color-mix(in oklab, #e4e4e4 10%, transparent);
+    --sidebar-accent: color-mix(in oklab, #f7f7f4 8%, transparent);
+    --sidebar-accent-foreground: color-mix(in oklab, #f7f7f4 94%, transparent);
+    --sidebar-border: color-mix(in oklab, #f7f7f4 10%, transparent);
     --sidebar-ring: #5da1e5;
 }
 
