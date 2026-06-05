@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiLeaderboardRouteImport } from './routes/api/leaderboard'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiEntriesRouteImport } from './routes/api/entries'
+import { Route as ApiEntriesSearchRouteImport } from './routes/api/entries/search'
 import { Route as ApiEntriesHandleRouteImport } from './routes/api/entries/$handle'
 import { Route as ApiCountriesStatsRouteImport } from './routes/api/countries/stats'
 import { Route as ApiEntriesHandleRefreshRouteImport } from './routes/api/entries/$handle/refresh'
@@ -55,6 +56,11 @@ const ApiEntriesRoute = ApiEntriesRouteImport.update({
   path: '/api/entries',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEntriesSearchRoute = ApiEntriesSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => ApiEntriesRoute,
+} as any)
 const ApiEntriesHandleRoute = ApiEntriesHandleRouteImport.update({
   id: '/$handle',
   path: '/$handle',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/countries/stats': typeof ApiCountriesStatsRoute
   '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
+  '/api/entries/search': typeof ApiEntriesSearchRoute
   '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/countries/stats': typeof ApiCountriesStatsRoute
   '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
+  '/api/entries/search': typeof ApiEntriesSearchRoute
   '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/countries/stats': typeof ApiCountriesStatsRoute
   '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
+  '/api/entries/search': typeof ApiEntriesSearchRoute
   '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/api/leaderboard'
     | '/api/countries/stats'
     | '/api/entries/$handle'
+    | '/api/entries/search'
     | '/api/entries/$handle/refresh'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/api/leaderboard'
     | '/api/countries/stats'
     | '/api/entries/$handle'
+    | '/api/entries/search'
     | '/api/entries/$handle/refresh'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/api/leaderboard'
     | '/api/countries/stats'
     | '/api/entries/$handle'
+    | '/api/entries/search'
     | '/api/entries/$handle/refresh'
   fileRoutesById: FileRoutesById
 }
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEntriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/entries/search': {
+      id: '/api/entries/search'
+      path: '/search'
+      fullPath: '/api/entries/search'
+      preLoaderRoute: typeof ApiEntriesSearchRouteImport
+      parentRoute: typeof ApiEntriesRoute
+    }
     '/api/entries/$handle': {
       id: '/api/entries/$handle'
       path: '/$handle'
@@ -246,10 +265,12 @@ const ApiEntriesHandleRouteWithChildren =
 
 interface ApiEntriesRouteChildren {
   ApiEntriesHandleRoute: typeof ApiEntriesHandleRouteWithChildren
+  ApiEntriesSearchRoute: typeof ApiEntriesSearchRoute
 }
 
 const ApiEntriesRouteChildren: ApiEntriesRouteChildren = {
   ApiEntriesHandleRoute: ApiEntriesHandleRouteWithChildren,
+  ApiEntriesSearchRoute: ApiEntriesSearchRoute,
 }
 
 const ApiEntriesRouteWithChildren = ApiEntriesRoute._addFileChildren(

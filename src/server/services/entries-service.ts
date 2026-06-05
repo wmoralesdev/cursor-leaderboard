@@ -4,6 +4,13 @@ import type {
   Prisma as PrismaTypes,
 } from "@/generated/prisma/client"
 import { prisma } from "@/server/db/prisma"
+import {
+  extractSearchTerm,
+  matchCountryCodes,
+  matchScore,
+  SEARCH_MAX_RESULTS,
+  SEARCH_MIN_LENGTH,
+} from "@/server/lib/normalize-search-query"
 import { normalizeHandle, profileUrlForHandle } from "@/server/lib/normalize-handle"
 import { scrapeCursorProfile } from "@/server/lib/scrape-cursor-profile"
 import type {
@@ -306,6 +313,175 @@ export async function getRankForEntry(
   })
 
   return ahead + 1
+}
+
+export async function getListPositionForEntry(
+  entry: LeaderboardEntry,
+  metric: LeaderboardMetric,
+  order: SortOrder,
+  country?: string,
+): Promise<number | null> {
+  if (entry.scrapeStatus !== "ok") return null
+
+  const field = metricField(metric)
+  const value = entry[field]
+  const comparison = order === "desc" ? { gt: value } : { lt: value }
+
+  const ahead = await prisma.leaderboardEntry.count({
+    where: {
+      scrapeStatus: "ok",
+      ...(country ? { country } : {}),
+      [field]: comparison,
+    },
+  })
+
+  return ahead + 1
+}
+
+export type LookupEntryResult = {
+  entry: LeaderboardEntry
+  rank: number
+  page: number
+  total: number
+}
+
+export type SearchEntryResult = {
+  entry: LeaderboardEntry
+  rank: number | null
+  page: number | null
+}
+
+export type SearchEntriesPageResult = {
+  query: string
+  results: SearchEntryResult[]
+  total: number
+}
+
+export async function searchEntries(options: {
+  query: string
+  metric: LeaderboardMetric
+  order?: SortOrder
+  country?: string
+  limit: number
+  maxResults?: number
+}): Promise<SearchEntriesPageResult> {
+  const rawQuery = options.query.trim()
+  const handleTerm = extractSearchTerm(rawQuery)
+  const matchedCountryCodes = matchCountryCodes(rawQuery)
+
+  if (
+    rawQuery.length < SEARCH_MIN_LENGTH &&
+    handleTerm.length < SEARCH_MIN_LENGTH &&
+    matchedCountryCodes.length === 0
+  ) {
+    return { query: rawQuery, results: [], total: 0 }
+  }
+
+  const order = options.order ?? "desc"
+  const maxResults = options.maxResults ?? SEARCH_MAX_RESULTS
+  const scopeWhere = {
+    scrapeStatus: "ok" as const,
+    ...(options.country ? { country: options.country } : {}),
+  }
+
+  const orFilters: PrismaTypes.LeaderboardEntryWhereInput[] = []
+
+  if (handleTerm.length >= SEARCH_MIN_LENGTH) {
+    orFilters.push({
+      handle: { contains: handleTerm, mode: "insensitive" },
+    })
+  }
+
+  if (rawQuery.length >= SEARCH_MIN_LENGTH) {
+    orFilters.push({
+      displayName: { contains: rawQuery, mode: "insensitive" },
+    })
+  }
+
+  if (matchedCountryCodes.length > 0) {
+    orFilters.push({
+      country: { in: matchedCountryCodes },
+    })
+  }
+
+  if (orFilters.length === 0) {
+    return { query: rawQuery, results: [], total: 0 }
+  }
+
+  const candidates = await prisma.leaderboardEntry.findMany({
+    where: {
+      ...scopeWhere,
+      OR: orFilters,
+    },
+    take: 75,
+  })
+
+  const rankedCandidates = candidates
+    .map((entry) => ({
+      entry,
+      score: matchScore(entry, handleTerm, rawQuery, matchedCountryCodes),
+    }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, maxResults)
+
+  const results = await Promise.all(
+    rankedCandidates.map(async ({ entry }) => {
+      const rank = await getListPositionForEntry(
+        entry,
+        options.metric,
+        order,
+        options.country,
+      )
+
+      return {
+        entry,
+        rank,
+        page: rank === null ? null : Math.ceil(rank / options.limit),
+      }
+    }),
+  )
+
+  const total = await prisma.leaderboardEntry.count({
+    where: {
+      ...scopeWhere,
+      OR: orFilters,
+    },
+  })
+
+  return { query: rawQuery, results, total }
+}
+
+export async function lookupEntry(options: {
+  rawHandle: string
+  metric: LeaderboardMetric
+  order?: SortOrder
+  country?: string
+  limit: number
+}): Promise<LookupEntryResult | null> {
+  const entry = await getEntryByHandle(options.rawHandle)
+  if (!entry) return null
+
+  const order = options.order ?? "desc"
+  const rank = await getListPositionForEntry(
+    entry,
+    options.metric,
+    order,
+    options.country,
+  )
+  if (rank === null) return null
+
+  const where = {
+    scrapeStatus: "ok" as const,
+    ...(options.country ? { country: options.country } : {}),
+  }
+  const total = await prisma.leaderboardEntry.count({ where })
+
+  return {
+    entry,
+    rank,
+    page: Math.ceil(rank / options.limit),
+    total,
+  }
 }
 
 const METRIC_SQL_COLUMN: Record<LeaderboardMetric, string> = {

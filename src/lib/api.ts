@@ -31,6 +31,41 @@ export type SubmitResult = {
   rankScope: string
 }
 
+export type LookupResult = {
+  entry: EntryDto
+  rank: number | null
+  rankMetric: MetricKey
+  rankOrder: SortOrder
+  rankScope: string | null
+  page: number | null
+  total: number
+}
+
+export type SearchResultItem = {
+  entry: EntryDto
+  rank: number | null
+  page: number | null
+}
+
+export type SearchResult = {
+  query: string
+  metric: MetricKey
+  order: SortOrder
+  rankScope: string | null
+  total: number
+  results: SearchResultItem[]
+}
+
+export class LookupError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "LookupError"
+    this.status = status
+  }
+}
+
 export const getCountryStats = createServerFn({ method: "GET" })
   .inputValidator(
     (input: { rankBy?: CountryRankBy; order?: SortOrder }) => input,
@@ -111,6 +146,149 @@ export const getLeaderboard = createServerFn({ method: "GET" })
         ),
       }
     } catch (error) {
+      if (!process.env.DATABASE_URL) {
+        throw new Error(
+          "DATABASE_URL is not set. Copy .env.example to .env and add your Neon connection string.",
+        )
+      }
+      if (isMissingSchemaError(error)) {
+        throw new Error(
+          "Leaderboard tables are missing. Run: pnpm db:migrate:deploy",
+        )
+      }
+      const dbResponse = handleDbError(error)
+      if (dbResponse) {
+        const body = (await dbResponse.json()) as { error?: string }
+        throw new Error(body.error ?? "Database error")
+      }
+      throw error
+    }
+  })
+
+export const searchLeaderboard = createServerFn({ method: "GET" })
+  .inputValidator(
+    (input: {
+      q: string
+      metric: MetricKey
+      order?: SortOrder
+      country?: string | null
+      limit?: LeaderboardPageSize
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<SearchResult> => {
+    const { searchEntries } = await import("@/server/services/entries-service")
+    const { serializeEntry } = await import("@/server/lib/serialize-entry")
+
+    const order = data.order ?? "desc"
+    const limit = data.limit ?? 100
+    const country = data.country ?? undefined
+
+    try {
+      const result = await searchEntries({
+        query: data.q,
+        metric: data.metric,
+        order,
+        country,
+        limit,
+      })
+
+      return {
+        query: result.query,
+        metric: data.metric,
+        order,
+        rankScope: data.country ?? null,
+        total: result.total,
+        results: result.results.map(({ entry, rank, page }) => ({
+          entry: serializeEntry(entry, rank ?? undefined),
+          rank,
+          page,
+        })),
+      }
+    } catch (error) {
+      if (!process.env.DATABASE_URL) {
+        throw new Error(
+          "DATABASE_URL is not set. Copy .env.example to .env and add your Neon connection string.",
+        )
+      }
+      if (isMissingSchemaError(error)) {
+        throw new Error(
+          "Leaderboard tables are missing. Run: pnpm db:migrate:deploy",
+        )
+      }
+      const dbResponse = handleDbError(error)
+      if (dbResponse) {
+        const body = (await dbResponse.json()) as { error?: string }
+        throw new Error(body.error ?? "Database error")
+      }
+      throw error
+    }
+  })
+
+export const lookupEntry = createServerFn({ method: "GET" })
+  .inputValidator(
+    (input: {
+      handle: string
+      metric: MetricKey
+      order?: SortOrder
+      country?: string | null
+      limit?: LeaderboardPageSize
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<LookupResult> => {
+    const { lookupEntry: lookupEntryByHandle } = await import(
+      "@/server/services/entries-service"
+    )
+    const { serializeEntry } = await import("@/server/lib/serialize-entry")
+    const { InvalidHandleError } = await import("@/server/lib/normalize-handle")
+
+    const order = data.order ?? "desc"
+    const limit = data.limit ?? 100
+    const country = data.country ?? undefined
+
+    try {
+      const result = await lookupEntryByHandle({
+        rawHandle: data.handle,
+        metric: data.metric,
+        order,
+        country,
+        limit,
+      })
+
+      if (!result) {
+        const { getEntryByHandle } = await import(
+          "@/server/services/entries-service"
+        )
+        const existing = await getEntryByHandle(data.handle)
+        if (!existing) {
+          throw new LookupError("Profile not on the leaderboard.", 404)
+        }
+
+        return {
+          entry: serializeEntry(existing),
+          rank: null,
+          rankMetric: data.metric,
+          rankOrder: order,
+          rankScope: data.country ?? null,
+          page: null,
+          total: 0,
+        }
+      }
+
+      const { entry, rank, page, total } = result
+      return {
+        entry: serializeEntry(entry, rank),
+        rank,
+        rankMetric: data.metric,
+        rankOrder: order,
+        rankScope: data.country ?? null,
+        page,
+        total,
+      }
+    } catch (error) {
+      if (error instanceof LookupError) throw error
+      if (error instanceof InvalidHandleError) {
+        throw new LookupError(error.message, 400)
+      }
       if (!process.env.DATABASE_URL) {
         throw new Error(
           "DATABASE_URL is not set. Copy .env.example to .env and add your Neon connection string.",

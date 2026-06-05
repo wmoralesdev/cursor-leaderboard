@@ -24,18 +24,29 @@ function LeaderboardToolbar({
   className,
 }: LeaderboardToolbarProps) {
   return (
-    <div
-      role="toolbar"
-      aria-label="Leaderboard filters"
+    <section
+      aria-labelledby="browse-leaderboard-label"
       className={cn("flex w-full flex-col gap-3", className)}
     >
-      <MetricTabs
-        value={metric}
-        onValueChange={onMetricChange}
-        aria-label="Rank by"
-      />
+      <div className="flex flex-col gap-1.5">
+        <h2
+          id="browse-leaderboard-label"
+          className="text-foreground text-xs font-medium"
+        >
+          Browse leaderboard
+        </h2>
+        <MetricTabs
+          value={metric}
+          onValueChange={onMetricChange}
+          aria-label="Rank by"
+        />
+      </div>
 
-      <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-3">
+      <div
+        role="group"
+        aria-label="Sort and scope"
+        className="flex w-full flex-wrap items-center gap-x-2 gap-y-3"
+      >
         <SortOrderControl
           value={order}
           onValueChange={onOrderChange}
@@ -47,7 +58,7 @@ function LeaderboardToolbar({
           aria-label="Scope"
         />
       </div>
-    </div>
+    </section>
   )
 }
 
