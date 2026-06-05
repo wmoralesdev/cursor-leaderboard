@@ -1,4 +1,5 @@
-import type { LeaderboardPageSize, MetricKey, SortOrder } from "@/lib/api"
+import { createLoader  } from "nuqs/server"
+import type {LoaderInput} from "nuqs/server";
 import { countryByCode } from "@/lib/countries"
 import {
   absoluteUrl,
@@ -8,60 +9,23 @@ import {
   SITE,
   websiteJsonLd,
 } from "@/lib/seo"
+import {
+  leaderboardSearchParams,
+  toLeaderboardSeoSearch
+  
+} from "@/lib/leaderboard-search-params"
+import type {LeaderboardSeoSearch} from "@/lib/leaderboard-search-params";
 
-const METRIC_KEYS: MetricKey[] = [
-  "agents",
-  "tokens",
-  "currentStreak",
-  "longestStreak",
-]
+const loadLeaderboardSearch = createLoader(leaderboardSearchParams)
 
-const SORT_ORDERS: SortOrder[] = ["asc", "desc"]
-const PAGE_SIZES: LeaderboardPageSize[] = [25, 50, 100]
-
-function parsePageSize(raw: unknown): LeaderboardPageSize {
-  const n = typeof raw === "string" ? Number.parseInt(raw, 10) : Number(raw)
-  return PAGE_SIZES.includes(n as LeaderboardPageSize)
-    ? (n as LeaderboardPageSize)
-    : 100
-}
-
-function parsePage(raw: unknown): number {
-  const n = typeof raw === "string" ? Number.parseInt(raw, 10) : Number(raw)
-  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1
-}
+export type { LeaderboardSeoSearch }
 
 export function parseLeaderboardSearch(
   search: Record<string, unknown>,
 ): LeaderboardSeoSearch {
-  const metric = METRIC_KEYS.includes(search.metric as MetricKey)
-    ? (search.metric as MetricKey)
-    : "agents"
-
-  const countryRaw =
-    typeof search.country === "string" ? search.country.toUpperCase() : undefined
-  const country =
-    countryRaw && /^[A-Z]{2}$/.test(countryRaw) ? countryRaw : undefined
-
-  const orderRaw =
-    typeof search.order === "string" ? search.order.toLowerCase() : undefined
-  const order = SORT_ORDERS.includes(orderRaw as SortOrder)
-    ? (orderRaw as SortOrder)
-    : "desc"
-
-  const page = parsePage(search.page)
-  const limit = parsePageSize(search.limit)
-
-  const base = { metric, order, page, limit }
-  return country ? { ...base, country } : base
-}
-
-export type LeaderboardSeoSearch = {
-  metric: MetricKey
-  order: SortOrder
-  country?: string
-  page: number
-  limit: LeaderboardPageSize
+  return toLeaderboardSeoSearch(
+    loadLeaderboardSearch(search as LoaderInput),
+  )
 }
 
 export function leaderboardCanonicalPath(search: LeaderboardSeoSearch): string {

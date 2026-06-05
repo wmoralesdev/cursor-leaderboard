@@ -1,4 +1,5 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
+import { useQueryStates } from "nuqs"
 
 import { CountryStatsCard } from "@/components/countries/country-stats-card"
 import { CountryStatsToolbar } from "@/components/countries/country-stats-toolbar"
@@ -9,10 +10,10 @@ import { getCountryStats } from "@/lib/api"
 import type { CountryRankBy } from "@/lib/country-rank"
 import { topMetricForRank } from "@/lib/country-rank"
 import {
-  parseCountriesSearch
-  
-} from "@/lib/countries-search"
-import type {CountriesSearch} from "@/lib/countries-search";
+  countriesSearchParams,
+  countriesSearchSchema,
+  toCountriesSearch,
+} from "@/lib/countries-search-params"
 import { METRICS, countryRankDescription } from "@/lib/format"
 import {
   absoluteUrl,
@@ -33,7 +34,7 @@ function leaderboardSearch(metric: ReturnType<typeof topMetricForRank>) {
 }
 
 export const Route = createFileRoute("/countries")({
-  validateSearch: parseCountriesSearch,
+  validateSearch: countriesSearchSchema,
   head: () => {
     const origin = getSiteOrigin()
     const description =
@@ -55,27 +56,26 @@ export const Route = createFileRoute("/countries")({
       ],
     })
   },
-  loaderDeps: ({ search }) => parseCountriesSearch(search as Record<string, unknown>),
+  loaderDeps: ({ search }) => toCountriesSearch(search),
   loader: ({ deps }) =>
     getCountryStats({ data: { rankBy: deps.rankBy, order: deps.order } }),
   component: CountriesPage,
 })
 
 function CountriesPage() {
-  const { rankBy, order } = Route.useSearch()
+  const [{ rankBy, order }, setSearch] = useQueryStates(countriesSearchParams)
   const data = Route.useLoaderData()
-  const navigate = useNavigate({ from: Route.fullPath })
   const countriesWithData = data.countries
   const activeCount = countriesWithData.length
   const topMetricLabel =
     METRICS.find((m) => m.key === data.topMetric)?.label ?? "Agents"
 
   function setRankBy(next: CountryRankBy) {
-    navigate({ search: (prev: CountriesSearch) => ({ ...prev, rankBy: next }) })
+    void setSearch({ rankBy: next })
   }
 
   function setOrder(next: SortOrder) {
-    navigate({ search: (prev: CountriesSearch) => ({ ...prev, order: next }) })
+    void setSearch({ order: next })
   }
 
   return (
