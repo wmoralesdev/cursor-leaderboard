@@ -49,11 +49,21 @@ export const Route = createFileRoute("/api/entries")({
 
           const rank = await getRankForEntry(entry, "agents", parsed.data.country)
 
+          const { getStandingCard } = await import(
+            "@/server/services/standing-card-service"
+          )
+          const standing = await getStandingCard({
+            rawHandle: parsed.data.handle,
+            metric: "agents",
+            order: "desc",
+          })
+
           return jsonResponse({
             entry: serializeEntry(entry),
             rank,
             rankMetric: "agents",
             rankScope: parsed.data.country,
+            standing: standing ?? undefined,
           })
         } catch (error) {
           if (error instanceof InvalidHandleError) {

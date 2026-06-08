@@ -13,12 +13,20 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as CountriesRouteImport } from './routes/countries'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ModelsIndexRouteImport } from './routes/models/index'
+import { Route as ModelsModelRouteImport } from './routes/models/$model'
+import { Route as CountriesCodeRouteImport } from './routes/countries/$code'
+import { Route as ApiStatsRouteImport } from './routes/api/stats'
+import { Route as ApiModelsRouteImport } from './routes/api/models'
 import { Route as ApiLeaderboardRouteImport } from './routes/api/leaderboard'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiEntriesRouteImport } from './routes/api/entries'
+import { Route as ApiModelsModelRouteImport } from './routes/api/models/$model'
 import { Route as ApiEntriesSearchRouteImport } from './routes/api/entries/search'
 import { Route as ApiEntriesHandleRouteImport } from './routes/api/entries/$handle'
 import { Route as ApiCountriesStatsRouteImport } from './routes/api/countries/stats'
+import { Route as ApiCountriesCodeRouteImport } from './routes/api/countries/$code'
+import { Route as ApiEntriesHandleStandingRouteImport } from './routes/api/entries/$handle/standing'
 import { Route as ApiEntriesHandleRefreshRouteImport } from './routes/api/entries/$handle/refresh'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -41,6 +49,31 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModelsIndexRoute = ModelsIndexRouteImport.update({
+  id: '/models/',
+  path: '/models/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModelsModelRoute = ModelsModelRouteImport.update({
+  id: '/models/$model',
+  path: '/models/$model',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CountriesCodeRoute = CountriesCodeRouteImport.update({
+  id: '/$code',
+  path: '/$code',
+  getParentRoute: () => CountriesRoute,
+} as any)
+const ApiStatsRoute = ApiStatsRouteImport.update({
+  id: '/api/stats',
+  path: '/api/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiModelsRoute = ApiModelsRouteImport.update({
+  id: '/api/models',
+  path: '/api/models',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLeaderboardRoute = ApiLeaderboardRouteImport.update({
   id: '/api/leaderboard',
   path: '/api/leaderboard',
@@ -55,6 +88,11 @@ const ApiEntriesRoute = ApiEntriesRouteImport.update({
   id: '/api/entries',
   path: '/api/entries',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiModelsModelRoute = ApiModelsModelRouteImport.update({
+  id: '/$model',
+  path: '/$model',
+  getParentRoute: () => ApiModelsRoute,
 } as any)
 const ApiEntriesSearchRoute = ApiEntriesSearchRouteImport.update({
   id: '/search',
@@ -71,6 +109,17 @@ const ApiCountriesStatsRoute = ApiCountriesStatsRouteImport.update({
   path: '/api/countries/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCountriesCodeRoute = ApiCountriesCodeRouteImport.update({
+  id: '/api/countries/$code',
+  path: '/api/countries/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEntriesHandleStandingRoute =
+  ApiEntriesHandleStandingRouteImport.update({
+    id: '/standing',
+    path: '/standing',
+    getParentRoute: () => ApiEntriesHandleRoute,
+  } as any)
 const ApiEntriesHandleRefreshRoute = ApiEntriesHandleRefreshRouteImport.update({
   id: '/refresh',
   path: '/refresh',
@@ -79,43 +128,67 @@ const ApiEntriesHandleRefreshRoute = ApiEntriesHandleRefreshRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/countries': typeof CountriesRoute
+  '/countries': typeof CountriesRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/entries': typeof ApiEntriesRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/models': typeof ApiModelsRouteWithChildren
+  '/api/stats': typeof ApiStatsRoute
+  '/countries/$code': typeof CountriesCodeRoute
+  '/models/$model': typeof ModelsModelRoute
+  '/models/': typeof ModelsIndexRoute
+  '/api/countries/$code': typeof ApiCountriesCodeRoute
   '/api/countries/stats': typeof ApiCountriesStatsRoute
   '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
   '/api/entries/search': typeof ApiEntriesSearchRoute
+  '/api/models/$model': typeof ApiModelsModelRoute
   '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
+  '/api/entries/$handle/standing': typeof ApiEntriesHandleStandingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/countries': typeof CountriesRoute
+  '/countries': typeof CountriesRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/entries': typeof ApiEntriesRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/models': typeof ApiModelsRouteWithChildren
+  '/api/stats': typeof ApiStatsRoute
+  '/countries/$code': typeof CountriesCodeRoute
+  '/models/$model': typeof ModelsModelRoute
+  '/models': typeof ModelsIndexRoute
+  '/api/countries/$code': typeof ApiCountriesCodeRoute
   '/api/countries/stats': typeof ApiCountriesStatsRoute
   '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
   '/api/entries/search': typeof ApiEntriesSearchRoute
+  '/api/models/$model': typeof ApiModelsModelRoute
   '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
+  '/api/entries/$handle/standing': typeof ApiEntriesHandleStandingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/countries': typeof CountriesRoute
+  '/countries': typeof CountriesRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/entries': typeof ApiEntriesRouteWithChildren
   '/api/health': typeof ApiHealthRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/models': typeof ApiModelsRouteWithChildren
+  '/api/stats': typeof ApiStatsRoute
+  '/countries/$code': typeof CountriesCodeRoute
+  '/models/$model': typeof ModelsModelRoute
+  '/models/': typeof ModelsIndexRoute
+  '/api/countries/$code': typeof ApiCountriesCodeRoute
   '/api/countries/stats': typeof ApiCountriesStatsRoute
   '/api/entries/$handle': typeof ApiEntriesHandleRouteWithChildren
   '/api/entries/search': typeof ApiEntriesSearchRoute
+  '/api/models/$model': typeof ApiModelsModelRoute
   '/api/entries/$handle/refresh': typeof ApiEntriesHandleRefreshRoute
+  '/api/entries/$handle/standing': typeof ApiEntriesHandleStandingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,10 +200,18 @@ export interface FileRouteTypes {
     | '/api/entries'
     | '/api/health'
     | '/api/leaderboard'
+    | '/api/models'
+    | '/api/stats'
+    | '/countries/$code'
+    | '/models/$model'
+    | '/models/'
+    | '/api/countries/$code'
     | '/api/countries/stats'
     | '/api/entries/$handle'
     | '/api/entries/search'
+    | '/api/models/$model'
     | '/api/entries/$handle/refresh'
+    | '/api/entries/$handle/standing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,10 +221,18 @@ export interface FileRouteTypes {
     | '/api/entries'
     | '/api/health'
     | '/api/leaderboard'
+    | '/api/models'
+    | '/api/stats'
+    | '/countries/$code'
+    | '/models/$model'
+    | '/models'
+    | '/api/countries/$code'
     | '/api/countries/stats'
     | '/api/entries/$handle'
     | '/api/entries/search'
+    | '/api/models/$model'
     | '/api/entries/$handle/refresh'
+    | '/api/entries/$handle/standing'
   id:
     | '__root__'
     | '/'
@@ -153,20 +242,33 @@ export interface FileRouteTypes {
     | '/api/entries'
     | '/api/health'
     | '/api/leaderboard'
+    | '/api/models'
+    | '/api/stats'
+    | '/countries/$code'
+    | '/models/$model'
+    | '/models/'
+    | '/api/countries/$code'
     | '/api/countries/stats'
     | '/api/entries/$handle'
     | '/api/entries/search'
+    | '/api/models/$model'
     | '/api/entries/$handle/refresh'
+    | '/api/entries/$handle/standing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CountriesRoute: typeof CountriesRoute
+  CountriesRoute: typeof CountriesRouteWithChildren
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiEntriesRoute: typeof ApiEntriesRouteWithChildren
   ApiHealthRoute: typeof ApiHealthRoute
   ApiLeaderboardRoute: typeof ApiLeaderboardRoute
+  ApiModelsRoute: typeof ApiModelsRouteWithChildren
+  ApiStatsRoute: typeof ApiStatsRoute
+  ModelsModelRoute: typeof ModelsModelRoute
+  ModelsIndexRoute: typeof ModelsIndexRoute
+  ApiCountriesCodeRoute: typeof ApiCountriesCodeRoute
   ApiCountriesStatsRoute: typeof ApiCountriesStatsRoute
 }
 
@@ -200,6 +302,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/models/': {
+      id: '/models/'
+      path: '/models'
+      fullPath: '/models/'
+      preLoaderRoute: typeof ModelsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/models/$model': {
+      id: '/models/$model'
+      path: '/models/$model'
+      fullPath: '/models/$model'
+      preLoaderRoute: typeof ModelsModelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/countries/$code': {
+      id: '/countries/$code'
+      path: '/$code'
+      fullPath: '/countries/$code'
+      preLoaderRoute: typeof CountriesCodeRouteImport
+      parentRoute: typeof CountriesRoute
+    }
+    '/api/stats': {
+      id: '/api/stats'
+      path: '/api/stats'
+      fullPath: '/api/stats'
+      preLoaderRoute: typeof ApiStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/models': {
+      id: '/api/models'
+      path: '/api/models'
+      fullPath: '/api/models'
+      preLoaderRoute: typeof ApiModelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/leaderboard': {
       id: '/api/leaderboard'
       path: '/api/leaderboard'
@@ -220,6 +357,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/entries'
       preLoaderRoute: typeof ApiEntriesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/models/$model': {
+      id: '/api/models/$model'
+      path: '/$model'
+      fullPath: '/api/models/$model'
+      preLoaderRoute: typeof ApiModelsModelRouteImport
+      parentRoute: typeof ApiModelsRoute
     }
     '/api/entries/search': {
       id: '/api/entries/search'
@@ -242,6 +386,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCountriesStatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/countries/$code': {
+      id: '/api/countries/$code'
+      path: '/api/countries/$code'
+      fullPath: '/api/countries/$code'
+      preLoaderRoute: typeof ApiCountriesCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/entries/$handle/standing': {
+      id: '/api/entries/$handle/standing'
+      path: '/standing'
+      fullPath: '/api/entries/$handle/standing'
+      preLoaderRoute: typeof ApiEntriesHandleStandingRouteImport
+      parentRoute: typeof ApiEntriesHandleRoute
+    }
     '/api/entries/$handle/refresh': {
       id: '/api/entries/$handle/refresh'
       path: '/refresh'
@@ -252,12 +410,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CountriesRouteChildren {
+  CountriesCodeRoute: typeof CountriesCodeRoute
+}
+
+const CountriesRouteChildren: CountriesRouteChildren = {
+  CountriesCodeRoute: CountriesCodeRoute,
+}
+
+const CountriesRouteWithChildren = CountriesRoute._addFileChildren(
+  CountriesRouteChildren,
+)
+
 interface ApiEntriesHandleRouteChildren {
   ApiEntriesHandleRefreshRoute: typeof ApiEntriesHandleRefreshRoute
+  ApiEntriesHandleStandingRoute: typeof ApiEntriesHandleStandingRoute
 }
 
 const ApiEntriesHandleRouteChildren: ApiEntriesHandleRouteChildren = {
   ApiEntriesHandleRefreshRoute: ApiEntriesHandleRefreshRoute,
+  ApiEntriesHandleStandingRoute: ApiEntriesHandleStandingRoute,
 }
 
 const ApiEntriesHandleRouteWithChildren =
@@ -277,14 +449,31 @@ const ApiEntriesRouteWithChildren = ApiEntriesRoute._addFileChildren(
   ApiEntriesRouteChildren,
 )
 
+interface ApiModelsRouteChildren {
+  ApiModelsModelRoute: typeof ApiModelsModelRoute
+}
+
+const ApiModelsRouteChildren: ApiModelsRouteChildren = {
+  ApiModelsModelRoute: ApiModelsModelRoute,
+}
+
+const ApiModelsRouteWithChildren = ApiModelsRoute._addFileChildren(
+  ApiModelsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CountriesRoute: CountriesRoute,
+  CountriesRoute: CountriesRouteWithChildren,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiEntriesRoute: ApiEntriesRouteWithChildren,
   ApiHealthRoute: ApiHealthRoute,
   ApiLeaderboardRoute: ApiLeaderboardRoute,
+  ApiModelsRoute: ApiModelsRouteWithChildren,
+  ApiStatsRoute: ApiStatsRoute,
+  ModelsModelRoute: ModelsModelRoute,
+  ModelsIndexRoute: ModelsIndexRoute,
+  ApiCountriesCodeRoute: ApiCountriesCodeRoute,
   ApiCountriesStatsRoute: ApiCountriesStatsRoute,
 }
 export const routeTree = rootRouteImport

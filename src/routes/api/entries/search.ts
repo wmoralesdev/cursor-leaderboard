@@ -16,6 +16,7 @@ export const Route = createFileRoute("/api/entries/search")({
           metric: url.searchParams.get("metric") ?? undefined,
           order: url.searchParams.get("order") ?? undefined,
           country: url.searchParams.get("country") ?? undefined,
+          models: url.searchParams.get("models") ?? undefined,
           limit: url.searchParams.get("limit") ?? undefined,
         })
 
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/api/entries/search")({
           })
         }
 
-        const { q, metric, order, country, limit } = parsed.data
+        const { q, metric, order, country, models, limit } = parsed.data
 
         let result
         try {
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/api/entries/search")({
             metric,
             order,
             country,
+            models,
             limit,
           })
         } catch (error) {
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/api/entries/search")({
           metric,
           order,
           country: country ?? null,
+          models,
           total: result.total,
           results: result.results.map(({ entry, rank, page }) => ({
             entry: serializeEntry(entry, rank ?? undefined),

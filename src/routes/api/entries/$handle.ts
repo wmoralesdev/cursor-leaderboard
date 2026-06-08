@@ -19,6 +19,7 @@ export const Route = createFileRoute("/api/entries/$handle")({
             url.searchParams.has("metric") ||
             url.searchParams.has("order") ||
             url.searchParams.has("country") ||
+            url.searchParams.has("models") ||
             url.searchParams.has("limit")
 
           if (hasLookupParams) {
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/api/entries/$handle")({
               metric: url.searchParams.get("metric") ?? undefined,
               order: url.searchParams.get("order") ?? undefined,
               country: url.searchParams.get("country") ?? undefined,
+              models: url.searchParams.get("models") ?? undefined,
               limit: url.searchParams.get("limit") ?? undefined,
             })
 
@@ -35,7 +37,7 @@ export const Route = createFileRoute("/api/entries/$handle")({
               })
             }
 
-            const { metric, order, country, limit } = parsed.data
+            const { metric, order, country, models, limit } = parsed.data
 
             let result
             try {
@@ -44,6 +46,7 @@ export const Route = createFileRoute("/api/entries/$handle")({
                 metric,
                 order,
                 country,
+                models,
                 limit,
               })
             } catch (error) {
