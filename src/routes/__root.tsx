@@ -2,6 +2,7 @@ import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 
+import { ScrollEdgeButton } from "@/components/layout/scroll-edge-button"
 import { SITE } from "@/lib/seo"
 import { THEME_INIT_SCRIPT } from "@/lib/theme"
 
@@ -53,6 +54,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <ScrollEdgeButton />
         <TanStackDevtools
           config={{
             position: "bottom-right",
