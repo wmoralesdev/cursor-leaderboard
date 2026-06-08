@@ -20,10 +20,28 @@ export const leaderboardPageSizeSchema = z.coerce
   .int()
   .pipe(z.union([z.literal(25), z.literal(50), z.literal(100)]))
 
+export const leaderboardMetricSchema = z.enum([
+  "agents",
+  "tokens",
+  "currentStreak",
+  "longestStreak",
+  "longestAgent",
+  "joined",
+])
+
+export const modelsQuerySchema = z
+  .string()
+  .optional()
+  .transform((val) => {
+    if (!val?.trim()) return [] as string[]
+    return val
+      .split(",")
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0 && m.length <= 200)
+  })
+
 export const leaderboardQuerySchema = z.object({
-  metric: z
-    .enum(["agents", "tokens", "currentStreak", "longestStreak"])
-    .default("agents"),
+  metric: leaderboardMetricSchema.default("agents"),
   order: sortOrderSchema,
   country: z
     .string()
@@ -31,15 +49,14 @@ export const leaderboardQuerySchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{2}$/)
     .optional(),
+  models: modelsQuerySchema,
   page: z.coerce.number().int().min(1).default(1),
   limit: leaderboardPageSizeSchema.default(100),
 })
 
 export const searchEntriesQuerySchema = z.object({
   q: z.string().trim().min(SEARCH_MIN_LENGTH).max(200),
-  metric: z
-    .enum(["agents", "tokens", "currentStreak", "longestStreak"])
-    .default("agents"),
+  metric: leaderboardMetricSchema.default("agents"),
   order: sortOrderSchema,
   country: z
     .string()
@@ -47,13 +64,12 @@ export const searchEntriesQuerySchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{2}$/)
     .optional(),
+  models: modelsQuerySchema,
   limit: leaderboardPageSizeSchema.default(100),
 })
 
 export const lookupEntryQuerySchema = z.object({
-  metric: z
-    .enum(["agents", "tokens", "currentStreak", "longestStreak"])
-    .default("agents"),
+  metric: leaderboardMetricSchema.default("agents"),
   order: sortOrderSchema,
   country: z
     .string()
@@ -61,11 +77,10 @@ export const lookupEntryQuerySchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{2}$/)
     .optional(),
+  models: modelsQuerySchema,
   limit: leaderboardPageSizeSchema.default(100),
 })
 
-export type LeaderboardMetric = z.infer<
-  typeof leaderboardQuerySchema
->["metric"]
+export type LeaderboardMetric = z.infer<typeof leaderboardMetricSchema>
 
 export type SortOrder = z.infer<typeof sortOrderSchema>

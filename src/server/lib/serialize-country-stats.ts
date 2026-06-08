@@ -5,6 +5,7 @@ import type {
   LeaderboardMetric,
   SortOrder,
 } from "@/server/validation/entry-schemas"
+import type { CountryStatsHeaderCache } from "@/server/services/country-stats-cache-service"
 
 export type CountryTopEntryDto = {
   rank: number
@@ -21,13 +22,20 @@ export type CountryStatsItemDto = {
   country: string
   profileCount: number
   globalRank: number | null
+  topModel: string | null
   topThree: CountryTopEntryDto[]
+}
+
+export type CountryStatsHeaderDto = {
+  countryCount: number
+  topModel: string | null
 }
 
 export type CountryStatsDto = {
   rankBy: CountryRankBy
   order: SortOrder
   topMetric: LeaderboardMetric
+  header: CountryStatsHeaderDto
   countries: CountryStatsItemDto[]
 }
 
@@ -39,6 +47,8 @@ function metricValueFor(entry: LeaderboardEntry, metric: LeaderboardMetric): str
       return String(entry.currentStreakDays)
     case "longestStreak":
       return String(entry.longestStreakDays)
+    case "longestAgent":
+      return String(entry.longestAgentHours)
     case "agents":
     default:
       return String(entry.agentsTotal)
@@ -114,6 +124,8 @@ export function buildCountryStatsDto(input: {
   order: SortOrder
   aggregates: CountryAggregate[]
   topByCountry: Map<string, LeaderboardEntry[]>
+  topModelByCountry: Map<string, string>
+  headerCache: CountryStatsHeaderCache
 }): CountryStatsDto {
   const topMetric = topMetricForRank(input.rankBy)
 
@@ -131,6 +143,7 @@ export function buildCountryStatsDto(input: {
       country: agg.country,
       profileCount: agg.profileCount,
       globalRank: globalRankByCode.get(agg.country) ?? null,
+      topModel: input.topModelByCountry.get(agg.country) ?? null,
       topThree: topEntries.map((entry, index) =>
         serializeCountryTopEntry(entry, index + 1, topMetric),
       ),
@@ -141,6 +154,10 @@ export function buildCountryStatsDto(input: {
     rankBy: input.rankBy,
     order: input.order,
     topMetric,
+    header: {
+      countryCount: input.headerCache.countryCount,
+      topModel: input.headerCache.topModel,
+    },
     countries,
   }
 }

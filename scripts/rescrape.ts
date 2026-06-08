@@ -4,19 +4,26 @@ import { InvalidHandleError } from "@/server/lib/normalize-handle"
 import {
   EntryNotFoundError,
   rescrapeAllEntries,
+  rescrapeDueEntries,
   rescrapeEntry,
+  rescrapeStaleEntries,
 } from "@/server/services/entries-service"
 
 function printUsage(): void {
   console.log(`Usage:
   pnpm rescrape <handle|url> [more...]   Re-scrape one or more stored profiles
   pnpm rescrape --all                    Re-scrape every row in the database
+  pnpm rescrape --stale                  Re-scrape rows missing tenure or models
+  pnpm rescrape --due                    Re-scrape rows older than SCRAPE_MAX_AGE_HOURS
+  pnpm rescrape --due --limit=50         Cap profiles per run (default: SCRAPE_BATCH_LIMIT)
   pnpm rescrape --all --delay-ms=1000    Pause between profiles (default 500)
 
 Examples:
   pnpm rescrape jpl
   pnpm rescrape https://cursor.com/@jpl
-  pnpm rescrape --all`)
+  pnpm rescrape --all
+  pnpm rescrape --stale
+  pnpm rescrape --due --limit=50`)
 }
 
 function parseDelayMs(args: string[]): number | undefined {
@@ -24,6 +31,18 @@ function parseDelayMs(args: string[]): number | undefined {
   if (!flag) return undefined
   const value = Number.parseInt(flag.slice("--delay-ms=".length), 10)
   return Number.isFinite(value) && value >= 0 ? value : undefined
+}
+
+function parseLimit(args: string[]): number | undefined {
+  const flag = args.find((a) => a.startsWith("--limit="))
+  if (!flag) return undefined
+  const value = Number.parseInt(flag.slice("--limit=".length), 10)
+  return Number.isFinite(value) && value > 0 ? value : undefined
+}
+
+function formatTopModels(topModels: unknown): string {
+  if (!Array.isArray(topModels) || topModels.length === 0) return "[]"
+  return `[${topModels.join(", ")}]`
 }
 
 async function rescrapeHandles(handles: string[]): Promise<number> {
@@ -35,8 +54,11 @@ async function rescrapeHandles(handles: string[]): Promise<number> {
       const status = entry.scrapeStatus
       const agents = entry.agentsTotal
       const tokens = entry.tokensTotal.toString()
+      const joined =
+        entry.joinedDaysAgo !== null ? `${entry.joinedDaysAgo}d` : "—"
+      const models = formatTopModels(entry.topModels)
       console.log(
-        `[rescrape] @${entry.handle} ${status} agents=${agents} tokens=${tokens}`,
+        `[rescrape] @${entry.handle} ${status} agents=${agents} tokens=${tokens} joined=${joined} models=${models}`,
       )
       if (status !== "ok" && entry.scrapeError) {
         console.error(`  detail: ${entry.scrapeError}`)
@@ -68,7 +90,24 @@ async function main(): Promise<void> {
   }
 
   const delayMs = parseDelayMs(argv)
+  const limit = parseLimit(argv)
   const positional = argv.filter((a) => !a.startsWith("--"))
+
+  if (argv.includes("--due")) {
+    const summary = await rescrapeDueEntries({ delayMs, limit })
+    console.log(
+      `[rescrape] due done ok=${summary.ok} failed=${summary.failed}`,
+    )
+    process.exit(summary.failed > 0 ? 1 : 0)
+  }
+
+  if (argv.includes("--stale")) {
+    const summary = await rescrapeStaleEntries({ delayMs })
+    console.log(
+      `[rescrape] stale done ok=${summary.ok} failed=${summary.failed}`,
+    )
+    process.exit(summary.failed > 0 ? 1 : 0)
+  }
 
   if (argv.includes("--all")) {
     const summary = await rescrapeAllEntries({ delayMs })

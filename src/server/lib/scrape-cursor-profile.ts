@@ -1,9 +1,8 @@
+import { brotliDecompressSync, gunzipSync } from "node:zlib"
+
 import { profileUrlForHandle } from "@/server/lib/normalize-handle"
-import {
-  parseCursorProfileHtml
-  
-} from "@/server/lib/parse-cursor-profile"
-import type {CursorProfileStats} from "@/server/lib/parse-cursor-profile";
+import { parseCursorProfileHtml } from "@/server/lib/parse-cursor-profile"
+import type { CursorProfileStats } from "@/server/lib/parse-cursor-profile"
 
 export type ScrapeProfileResult =
   | { status: "ok"; stats: CursorProfileStats }
@@ -17,6 +16,25 @@ function scrapeUserAgent(): string {
   return process.env.SCRAPE_USER_AGENT?.trim() || DEFAULT_USER_AGENT
 }
 
+/** Cursor sometimes returns raw Brotli without Content-Encoding; Node fetch won't decode it. */
+export function decodeProfileResponseBody(bytes: Uint8Array): string {
+  const buf = Buffer.from(bytes)
+  const asText = buf.toString("utf8")
+  if (asText.trimStart().startsWith("<")) {
+    return asText
+  }
+
+  try {
+    return brotliDecompressSync(buf).toString("utf8")
+  } catch {
+    try {
+      return gunzipSync(buf).toString("utf8")
+    } catch {
+      return asText
+    }
+  }
+}
+
 export async function scrapeCursorProfile(
   handle: string,
 ): Promise<ScrapeProfileResult> {
@@ -28,6 +46,8 @@ export async function scrapeCursorProfile(
       headers: {
         "User-Agent": scrapeUserAgent(),
         Accept: "text/html,application/xhtml+xml",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "en-US,en;q=0.9",
       },
       redirect: "follow",
     })
@@ -48,7 +68,9 @@ export async function scrapeCursorProfile(
     }
   }
 
-  const html = await response.text()
+  const html = decodeProfileResponseBody(
+    new Uint8Array(await response.arrayBuffer()),
+  )
   const parsed = parseCursorProfileHtml(html, handle)
 
   if (!parsed.ok) {

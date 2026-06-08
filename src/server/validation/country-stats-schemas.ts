@@ -8,6 +8,7 @@ const leaderboardMetricSchema = z.enum([
   "tokens",
   "currentStreak",
   "longestStreak",
+  "longestAgent",
 ])
 
 export const countryRankBySchema = z

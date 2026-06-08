@@ -12,6 +12,14 @@ import {
 } from "@/server/lib/normalize-search-query"
 import { normalizeHandle, profileUrlForHandle } from "@/server/lib/normalize-handle"
 import { scrapeCursorProfile } from "@/server/lib/scrape-cursor-profile"
+import {
+  getCountryStatsHeader,
+  invalidateCountryStatsCache,
+} from "@/server/services/country-stats-cache-service"
+import { invalidateCountryDetailCache } from "@/server/services/country-detail-cache-service"
+import { invalidateModelStatsCache } from "@/server/services/model-stats-cache-service"
+import type { CountryStatsHeaderCache } from "@/server/services/country-stats-cache-service"
+import { invalidateLeaderboardStatsCache } from "@/server/services/leaderboard-stats-service"
 import type {
   LeaderboardMetric,
   SortOrder,
@@ -47,6 +55,76 @@ function scrapeCooldownMs(): number {
   return (Number.isFinite(minutes) && minutes > 0 ? minutes : 15) * 60 * 1000
 }
 
+function scrapeMaxAgeMs(): number {
+  const hours = Number.parseFloat(process.env.SCRAPE_MAX_AGE_HOURS ?? "24")
+  return (Number.isFinite(hours) && hours > 0 ? hours : 24) * 60 * 60 * 1000
+}
+
+function scrapeErrorRetryMs(): number {
+  const hours = Number.parseFloat(process.env.SCRAPE_ERROR_RETRY_HOURS ?? "1")
+  return (Number.isFinite(hours) && hours > 0 ? hours : 1) * 60 * 60 * 1000
+}
+
+function scrapeBatchLimit(): number {
+  const limit = Number.parseInt(process.env.SCRAPE_BATCH_LIMIT ?? "50", 10)
+  return Number.isFinite(limit) && limit > 0 ? limit : 50
+}
+
+type DueEntrySlice = Pick<LeaderboardEntry, "scrapedAt" | "scrapeStatus">
+
+export function isEntryDueForRescrape(
+  entry: DueEntrySlice,
+  options?: {
+    now?: Date
+    maxAgeMs?: number
+    errorRetryMs?: number
+  },
+): boolean {
+  if (!entry.scrapedAt) return true
+
+  const now = options?.now ?? new Date()
+  const elapsed = now.getTime() - entry.scrapedAt.getTime()
+  const maxAge =
+    entry.scrapeStatus === "parse_error"
+      ? (options?.errorRetryMs ?? scrapeErrorRetryMs())
+      : (options?.maxAgeMs ?? scrapeMaxAgeMs())
+
+  return elapsed >= maxAge
+}
+
+function buildDueEntryWhere(now: Date = new Date()): PrismaTypes.LeaderboardEntryWhereInput {
+  const okCutoff = new Date(now.getTime() - scrapeMaxAgeMs())
+  const errorCutoff = new Date(now.getTime() - scrapeErrorRetryMs())
+
+  return {
+    OR: [
+      { scrapedAt: null },
+      {
+        scrapeStatus: "parse_error",
+        scrapedAt: { lt: errorCutoff },
+      },
+      {
+        scrapeStatus: { in: ["ok", "not_found"] },
+        scrapedAt: { lt: okCutoff },
+      },
+    ],
+  }
+}
+
+export async function listDueEntries(options?: {
+  limit?: number
+  now?: Date
+}): Promise<Array<{ handle: string }>> {
+  const limit = options?.limit ?? scrapeBatchLimit()
+
+  return prisma.leaderboardEntry.findMany({
+    where: buildDueEntryWhere(options?.now),
+    select: { handle: true },
+    orderBy: { scrapedAt: { sort: "asc", nulls: "first" } },
+    take: limit,
+  })
+}
+
 function orderByForMetric(
   metric: LeaderboardMetric,
   order: SortOrder,
@@ -58,13 +136,17 @@ function orderByForMetric(
       return { currentStreakDays: order }
     case "longestStreak":
       return { longestStreakDays: order }
+    case "longestAgent":
+      return { longestAgentHours: order }
+    case "joined":
+      return { joinedDaysAgo: { sort: order, nulls: "last" } }
     case "agents":
     default:
       return { agentsTotal: order }
   }
 }
 
-function metricField(metric: LeaderboardMetric): keyof LeaderboardEntry {
+export function metricField(metric: LeaderboardMetric): keyof LeaderboardEntry {
   switch (metric) {
     case "tokens":
       return "tokensTotal"
@@ -72,9 +154,28 @@ function metricField(metric: LeaderboardMetric): keyof LeaderboardEntry {
       return "currentStreakDays"
     case "longestStreak":
       return "longestStreakDays"
+    case "longestAgent":
+      return "longestAgentHours"
+    case "joined":
+      return "joinedDaysAgo"
     case "agents":
     default:
       return "agentsTotal"
+  }
+}
+
+export function buildEntryWhere(options: {
+  country?: string
+  models?: string[]
+}): PrismaTypes.LeaderboardEntryWhereInput {
+  const models = options.models?.filter(Boolean) ?? []
+
+  return {
+    scrapeStatus: "ok",
+    ...(options.country ? { country: options.country } : {}),
+    ...(models.length > 0
+      ? { OR: models.map((m) => ({ topModels: { array_contains: m } })) }
+      : {}),
   }
 }
 
@@ -173,7 +274,19 @@ export async function submitEntry(
   country: string,
 ): Promise<LeaderboardEntry> {
   const handle = normalizeHandle(rawHandle)
-  return applyScrapeToEntry(handle, country)
+  const existing = await prisma.leaderboardEntry.findUnique({ where: { handle } })
+  const entry = await applyScrapeToEntry(handle, country)
+
+  if (!existing) {
+    await Promise.all([
+      invalidateLeaderboardStatsCache(),
+      invalidateCountryStatsCache(),
+      invalidateCountryDetailCache(),
+      invalidateModelStatsCache(),
+    ])
+  }
+
+  return entry
 }
 
 export async function getEntryByHandle(
@@ -240,9 +353,19 @@ export async function rescrapeAllEntries(options?: {
   for (let i = 0; i < entries.length; i++) {
     const { handle } = entries[i]
     try {
-      await rescrapeEntry(handle)
-      result.ok += 1
-      console.log(`[rescrape] ${i + 1}/${entries.length} ${handle} ok`)
+      const entry = await rescrapeEntry(handle)
+      if (entry.scrapeStatus === "ok") {
+        result.ok += 1
+      } else {
+        result.failed += 1
+        result.errors.push({
+          handle,
+          error: entry.scrapeError ?? entry.scrapeStatus,
+        })
+      }
+      console.log(
+        `[rescrape] ${i + 1}/${entries.length} ${handle} ${entry.scrapeStatus}`,
+      )
     } catch (error) {
       result.failed += 1
       const message = error instanceof Error ? error.message : String(error)
@@ -258,6 +381,110 @@ export async function rescrapeAllEntries(options?: {
   return result
 }
 
+/** Re-scrape rows missing tenure or top-models data (dev/ops). */
+export async function rescrapeStaleEntries(options?: {
+  delayMs?: number
+}): Promise<RescrapeAllResult> {
+  const delayMs = options?.delayMs ?? 500
+  const entries = await prisma.leaderboardEntry.findMany({
+    where: {
+      scrapeStatus: "ok",
+      OR: [{ joinedDaysAgo: null }, { topModels: { equals: [] } }],
+    },
+    select: { handle: true },
+    orderBy: { handle: "asc" },
+  })
+
+  const result: RescrapeAllResult = { ok: 0, failed: 0, errors: [] }
+
+  for (let i = 0; i < entries.length; i++) {
+    const { handle } = entries[i]
+    try {
+      const entry = await rescrapeEntry(handle)
+      if (entry.scrapeStatus === "ok") {
+        result.ok += 1
+      } else {
+        result.failed += 1
+        result.errors.push({
+          handle,
+          error: entry.scrapeError ?? entry.scrapeStatus,
+        })
+      }
+      console.log(
+        `[rescrape] ${i + 1}/${entries.length} ${handle} ${entry.scrapeStatus}`,
+      )
+    } catch (error) {
+      result.failed += 1
+      const message = error instanceof Error ? error.message : String(error)
+      result.errors.push({ handle, error: message })
+      console.error(
+        `[rescrape] ${i + 1}/${entries.length} ${handle} failed: ${message}`,
+      )
+    }
+
+    if (delayMs > 0 && i < entries.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  return result
+}
+
+/** Re-scrape rows past their scrape age (proactive background refresh). */
+export async function rescrapeDueEntries(options?: {
+  limit?: number
+  delayMs?: number
+}): Promise<RescrapeAllResult> {
+  const delayMs = options?.delayMs ?? 500
+  const entries = await listDueEntries({ limit: options?.limit })
+
+  const result: RescrapeAllResult = { ok: 0, failed: 0, errors: [] }
+
+  for (let i = 0; i < entries.length; i++) {
+    const { handle } = entries[i]
+    try {
+      const entry = await rescrapeEntry(handle)
+      if (entry.scrapeStatus === "ok") {
+        result.ok += 1
+      } else {
+        result.failed += 1
+        result.errors.push({
+          handle,
+          error: entry.scrapeError ?? entry.scrapeStatus,
+        })
+      }
+      console.log(
+        `[rescrape] ${i + 1}/${entries.length} ${handle} ${entry.scrapeStatus}`,
+      )
+    } catch (error) {
+      result.failed += 1
+      const message = error instanceof Error ? error.message : String(error)
+      result.errors.push({ handle, error: message })
+      console.error(
+        `[rescrape] ${i + 1}/${entries.length} ${handle} failed: ${message}`,
+      )
+    }
+
+    if (delayMs > 0 && i < entries.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  return result
+}
+
+export async function getDistinctTopModels(): Promise<string[]> {
+  const rows = await prisma.$queryRaw<Array<{ model: string }>>(Prisma.sql`
+    SELECT DISTINCT elem AS model
+    FROM "LeaderboardEntry" e,
+         jsonb_array_elements_text(e."topModels") AS elem
+    WHERE e."scrapeStatus" = 'ok'::"ScrapeStatus"
+    ORDER BY model ASC
+  `)
+
+  return rows.map((row) => row.model)
+}
+
 export type LeaderboardPageResult = {
   entries: LeaderboardEntry[]
   total: number
@@ -265,20 +492,36 @@ export type LeaderboardPageResult = {
   limit: number
 }
 
+/** Competitive rank for a row on a paginated leaderboard page. */
+export function rankForLeaderboardPage(options: {
+  order: SortOrder
+  total: number
+  page: number
+  limit: number
+  index: number
+}): number {
+  const rankOffset = (options.page - 1) * options.limit
+  if (options.order === "desc") {
+    return rankOffset + options.index + 1
+  }
+  return options.total - rankOffset - options.index
+}
+
 export async function getLeaderboard(options: {
   metric: LeaderboardMetric
   order?: SortOrder
   country?: string
+  models?: string[]
   page?: number
   limit: number
 }): Promise<LeaderboardPageResult> {
   const order = options.order ?? "desc"
   const page = options.page ?? 1
   const limit = options.limit
-  const where = {
-    scrapeStatus: "ok" as const,
-    ...(options.country ? { country: options.country } : {}),
-  }
+  const where = buildEntryWhere({
+    country: options.country,
+    models: options.models,
+  })
 
   const [entries, total] = await Promise.all([
     prisma.leaderboardEntry.findMany({
@@ -297,21 +540,9 @@ export async function getRankForEntry(
   entry: LeaderboardEntry,
   metric: LeaderboardMetric,
   country?: string,
+  models?: string[],
 ): Promise<number | null> {
-  if (entry.scrapeStatus !== "ok") return null
-
-  const field = metricField(metric)
-  const value = entry[field]
-
-  const ahead = await prisma.leaderboardEntry.count({
-    where: {
-      scrapeStatus: "ok",
-      ...(country ? { country } : {}),
-      [field]: { gt: value },
-    },
-  })
-
-  return ahead + 1
+  return getListPositionForEntry(entry, metric, "desc", country, models)
 }
 
 export async function getListPositionForEntry(
@@ -319,17 +550,21 @@ export async function getListPositionForEntry(
   metric: LeaderboardMetric,
   order: SortOrder,
   country?: string,
+  models?: string[],
 ): Promise<number | null> {
   if (entry.scrapeStatus !== "ok") return null
 
   const field = metricField(metric)
   const value = entry[field]
+
+  if (value === null) return null
+
   const comparison = order === "desc" ? { gt: value } : { lt: value }
+  const scope = buildEntryWhere({ country, models })
 
   const ahead = await prisma.leaderboardEntry.count({
     where: {
-      scrapeStatus: "ok",
-      ...(country ? { country } : {}),
+      ...scope,
       [field]: comparison,
     },
   })
@@ -361,6 +596,7 @@ export async function searchEntries(options: {
   metric: LeaderboardMetric
   order?: SortOrder
   country?: string
+  models?: string[]
   limit: number
   maxResults?: number
 }): Promise<SearchEntriesPageResult> {
@@ -378,10 +614,10 @@ export async function searchEntries(options: {
 
   const order = options.order ?? "desc"
   const maxResults = options.maxResults ?? SEARCH_MAX_RESULTS
-  const scopeWhere = {
-    scrapeStatus: "ok" as const,
-    ...(options.country ? { country: options.country } : {}),
-  }
+  const scopeWhere = buildEntryWhere({
+    country: options.country,
+    models: options.models,
+  })
 
   const orFilters: PrismaTypes.LeaderboardEntryWhereInput[] = []
 
@@ -423,6 +659,7 @@ export async function searchEntries(options: {
         options.metric,
         order,
         options.country,
+        options.models,
       )
 
       return {
@@ -448,6 +685,7 @@ export async function lookupEntry(options: {
   metric: LeaderboardMetric
   order?: SortOrder
   country?: string
+  models?: string[]
   limit: number
 }): Promise<LookupEntryResult | null> {
   const entry = await getEntryByHandle(options.rawHandle)
@@ -459,13 +697,14 @@ export async function lookupEntry(options: {
     options.metric,
     order,
     options.country,
+    options.models,
   )
   if (rank === null) return null
 
-  const where = {
-    scrapeStatus: "ok" as const,
-    ...(options.country ? { country: options.country } : {}),
-  }
+  const where = buildEntryWhere({
+    country: options.country,
+    models: options.models,
+  })
   const total = await prisma.leaderboardEntry.count({ where })
 
   return {
@@ -481,6 +720,8 @@ const METRIC_SQL_COLUMN: Record<LeaderboardMetric, string> = {
   tokens: "tokensTotal",
   currentStreak: "currentStreakDays",
   longestStreak: "longestStreakDays",
+  longestAgent: "longestAgentHours",
+  joined: "joinedDaysAgo",
 }
 
 type CountryAggregateRow = {
@@ -492,7 +733,11 @@ type CountryAggregateRow = {
 function countryMetricTotal(
   row: {
     _sum: { agentsTotal: number | null; tokensTotal: bigint | null }
-    _max: { currentStreakDays: number | null; longestStreakDays: number | null }
+    _max: {
+      currentStreakDays: number | null
+      longestStreakDays: number | null
+      longestAgentHours: number | null
+    }
   },
   metric: CountryStatsMetric,
 ): bigint | number {
@@ -503,6 +748,8 @@ function countryMetricTotal(
       return row._max.currentStreakDays ?? 0
     case "longestStreak":
       return row._max.longestStreakDays ?? 0
+    case "longestAgent":
+      return row._max.longestAgentHours ?? 0
     case "agents":
     default:
       return row._sum.agentsTotal ?? 0
@@ -511,11 +758,18 @@ function countryMetricTotal(
 
 type TopEntryRow = LeaderboardEntry & { rn: number }
 
+type TopModelByCountryRow = {
+  country: string
+  model: string
+}
+
 export type CountryStatsResult = {
   rankBy: CountryStatsQuery["rankBy"]
   order: CountryStatsQuery["order"]
   aggregates: CountryAggregateRow[]
   topByCountry: Map<string, LeaderboardEntry[]>
+  topModelByCountry: Map<string, string>
+  headerCache: CountryStatsHeaderCache
 }
 
 export async function getCountryStats(
@@ -531,13 +785,13 @@ export async function getCountryStats(
   const orderColumn = METRIC_SQL_COLUMN[topMetric]
   const rankByMetric = rankBy !== COUNTRY_RANK_PROFILES ? rankBy : null
 
-  const [grouped, topRows] = await Promise.all([
+  const [grouped, topRows, topModelRows, headerCache] = await Promise.all([
     prisma.leaderboardEntry.groupBy({
       by: ["country"],
       where: { scrapeStatus: "ok" },
       _count: { _all: true },
       _sum: { agentsTotal: true, tokensTotal: true },
-      _max: { currentStreakDays: true, longestStreakDays: true },
+      _max: { currentStreakDays: true, longestStreakDays: true, longestAgentHours: true },
     }),
     prisma.$queryRaw<TopEntryRow[]>(Prisma.sql`
       SELECT *
@@ -553,6 +807,30 @@ export async function getCountryStats(
       ) ranked
       WHERE ranked.rn <= 3
     `),
+    prisma.$queryRaw<TopModelByCountryRow[]>(Prisma.sql`
+      WITH model_counts AS (
+        SELECT
+          e.country,
+          elem AS model,
+          COUNT(DISTINCT e.id)::int AS profile_count
+        FROM "LeaderboardEntry" e,
+             jsonb_array_elements_text(e."topModels") AS elem
+        WHERE e."scrapeStatus" = 'ok'::"ScrapeStatus"
+        GROUP BY e.country, elem
+      ),
+      ranked AS (
+        SELECT
+          country,
+          model,
+          ROW_NUMBER() OVER (
+            PARTITION BY country
+            ORDER BY profile_count DESC, model ASC
+          ) AS rn
+        FROM model_counts
+      )
+      SELECT country, model FROM ranked WHERE rn = 1
+    `),
+    getCountryStatsHeader(),
   ])
 
   const aggregates: CountryAggregateRow[] = grouped.map((row) => ({
@@ -583,5 +861,16 @@ export async function getCountryStats(
     })
   }
 
-  return { rankBy, order, aggregates, topByCountry }
+  const topModelByCountry = new Map<string, string>(
+    topModelRows.map((row) => [row.country, row.model]),
+  )
+
+  return {
+    rankBy,
+    order,
+    aggregates,
+    topByCountry,
+    topModelByCountry,
+    headerCache,
+  }
 }

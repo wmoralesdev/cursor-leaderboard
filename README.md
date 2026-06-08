@@ -75,6 +75,7 @@ pnpm rescrape jpl
 pnpm rescrape https://cursor.com/@jpl
 pnpm rescrape --all
 pnpm rescrape --all --delay-ms=1000
+pnpm rescrape --due --limit=50   # rows older than SCRAPE_MAX_AGE_HOURS (default 24h)
 
 pnpm db:generate        # Regenerate client after schema changes
 pnpm db:migrate         # Create/apply migrations (dev)
@@ -98,6 +99,18 @@ The app supports **Vercel** (Nitro) and **Netlify** (`@netlify/vite-plugin-tanst
 
 **Environment variables** (both hosts): `DATABASE_URL` (Neon pooled URL for runtime), optional `DIRECT_URL` (direct Neon URL for Prisma CLI — auto-derived from pooled `DATABASE_URL` on Netlify builds), optional `VITE_SITE_URL`, `SCRAPE_COOLDOWN_MINUTES`, `SCRAPE_USER_AGENT`.
 
+**Proactive rescrape** (background job, not the Netlify app): `SCRAPE_MAX_AGE_HOURS` (default `24`), `SCRAPE_ERROR_RETRY_HOURS` (default `1` for `parse_error` rows), `SCRAPE_BATCH_LIMIT` (default `50`). User-initiated refresh still uses `SCRAPE_COOLDOWN_MINUTES` (default `15`).
+
+## Scheduled rescrape (GitHub Actions)
+
+Hourly workflow [`.github/workflows/rescrape.yml`](.github/workflows/rescrape.yml) runs `pnpm rescrape --due` against Neon so all stored profiles stay within `SCRAPE_MAX_AGE_HOURS` without Netlify function timeouts.
+
+1. In the GitHub repo, add secret **`DATABASE_URL`** (Neon pooled or direct URL).
+2. Optional repository variables: `SCRAPE_MAX_AGE_HOURS`, `SCRAPE_BATCH_LIMIT`, `SCRAPE_ERROR_RETRY_HOURS`.
+3. Trigger manually via **Actions → Rescrape due profiles → Run workflow**, or wait for the hourly cron.
+
+Each run processes up to 50 oldest due profiles (~25s at 500ms delay). Increase cron frequency or `SCRAPE_BATCH_LIMIT` as the leaderboard grows.
+
 - **Vercel**: `vercel.json` runs `build:vercel`. Add the same env vars in the project settings.
 - **Netlify**: `netlify.toml` runs `build:netlify` only. Apply schema changes locally with `pnpm db:migrate:deploy` before deploy. Requires Netlify CLI ≥ 17.31 for the TanStack Start plugin.
 
@@ -117,7 +130,7 @@ Local dev uses `pnpm dev` without a host plugin.
 
 - `pnpm dev` — dev server (port 3000)
 - `pnpm build:vercel` / `pnpm build:netlify` — production build for each host
-- `pnpm rescrape` — dev CLI to re-fetch cursor.com stats for stored handles
+- `pnpm rescrape` — dev/ops CLI to re-fetch cursor.com stats (`--due` for 24h proactive refresh)
 - `pnpm test` — parser/unit tests
 - `pnpm typecheck` — TypeScript
 
