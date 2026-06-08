@@ -1,17 +1,14 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
 import { CountryStatsCard } from "@/components/countries/country-stats-card"
+import { CountryHeaderStats } from "@/components/countries/country-header-stats"
 import { CountryStatsToolbar } from "@/components/countries/country-stats-toolbar"
+import { AppNavbar } from "@/components/layout/app-navbar"
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
-import { ThemeToggle } from "@/components/theme/theme-toggle"
 import type { SortOrder } from "@/lib/api"
 import { getCountryStats } from "@/lib/api"
 import type { CountryRankBy } from "@/lib/country-rank"
-import { topMetricForRank } from "@/lib/country-rank"
-import {
-  parseCountriesSearch
-  
-} from "@/lib/countries-search"
+import { parseCountriesSearch } from "@/lib/countries-search"
 import type {CountriesSearch} from "@/lib/countries-search";
 import { METRICS, countryRankDescription } from "@/lib/format"
 import {
@@ -23,21 +20,12 @@ import {
   websiteJsonLd,
 } from "@/lib/seo"
 
-function leaderboardSearch(metric: ReturnType<typeof topMetricForRank>) {
-  return {
-    metric,
-    order: "desc" as const,
-    page: 1,
-    limit: 100 as const,
-  }
-}
-
 export const Route = createFileRoute("/countries")({
   validateSearch: parseCountriesSearch,
   head: () => {
     const origin = getSiteOrigin()
     const description =
-      "Browse Cursor Leaderboard stats by country — profile counts, top builders, and links to each national board."
+      "Browse Cursor Leaderboard stats by country: profile counts, top builders, and links to each national board."
     return buildPageHead({
       title: "Country stats",
       description,
@@ -80,52 +68,26 @@ function CountriesPage() {
 
   return (
     <div className="min-h-svh">
-      <header className="border-border/60 sticky top-0 z-10 flex h-12 items-center justify-between border-b bg-background/80 px-5 backdrop-blur-md">
-        <div className="flex min-w-0 items-center gap-3 text-sm font-medium">
-          <Link
-            to="/"
-            search={leaderboardSearch(topMetricForRank(rankBy))}
-            className="flex min-w-0 items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-          >
-            <img
-              src="/CUBE_2D_DARK.png"
-              alt="Cursor Leaderboard"
-              width={24}
-              height={24}
-              className="size-4 shrink-0 object-contain"
-            />
-            <span className="truncate">Cursor Leaderboard</span>
-          </Link>
-          <span className="text-muted-foreground hidden text-xs sm:inline">
-            /
-          </span>
-          <span className="text-muted-foreground hidden truncate text-xs sm:inline">
-            Countries
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Link
-            to="/"
-            search={leaderboardSearch(topMetricForRank(rankBy))}
-            className="text-muted-foreground hover:text-foreground text-xs transition-colors"
-          >
-            Leaderboard
-          </Link>
-          <JoinDialog />
-        </div>
-      </header>
+      <AppNavbar />
 
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-5 py-10">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-xl font-semibold tracking-tight">
-            Country stats
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {countryRankDescription(rankBy)} Top three per country by{" "}
-            {topMetricLabel.toLowerCase()}.
-          </p>
-        </div>
+        <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-8">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-xl font-semibold tracking-tight">
+              Country stats
+            </h1>
+            <p className="text-muted-foreground max-w-[68ch] text-[13px]">
+              {countryRankDescription(rankBy)} Top three per country by{" "}
+              {topMetricLabel.toLowerCase()}.
+            </p>
+          </div>
+          {activeCount > 0 ? (
+            <CountryHeaderStats
+              header={data.header}
+              className="shrink-0 self-start"
+            />
+          ) : null}
+        </header>
 
         <CountryStatsToolbar
           rankBy={rankBy}
@@ -144,23 +106,17 @@ function CountriesPage() {
             <JoinDialog />
           </div>
         ) : (
-          <>
-            <p className="text-muted-foreground text-xs">
-              {activeCount} {activeCount === 1 ? "country" : "countries"} with
-              profiles
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {countriesWithData.map((stats) => (
-                <CountryStatsCard
-                  key={stats.country}
-                  countryCode={stats.country}
-                  stats={stats}
-                  topMetric={data.topMetric}
-                  order={order}
-                />
-              ))}
-            </div>
-          </>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {countriesWithData.map((stats) => (
+              <CountryStatsCard
+                key={stats.country}
+                countryCode={stats.country}
+                stats={stats}
+                topMetric={data.topMetric}
+                order={order}
+              />
+            ))}
+          </div>
         )}
       </main>
     </div>

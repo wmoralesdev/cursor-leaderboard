@@ -5,6 +5,7 @@ import type { CountryStatsItemDto, EntryDto, MetricKey, SortOrder } from "@/lib/
 import { countryByCode } from "@/lib/countries"
 import { METRICS, formatInt, formatMetricValue } from "@/lib/format"
 import { rankBadgeClasses } from "@/lib/rank-classes"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 type CountryStatsCardProps = {
@@ -47,7 +48,6 @@ function CountryStatsCard({
   countryCode,
   stats,
   topMetric,
-  order,
 }: CountryStatsCardProps) {
   const meta = countryByCode(countryCode)
   const countryName = meta?.name ?? countryCode
@@ -56,15 +56,10 @@ function CountryStatsCard({
 
   return (
     <Link
-      to="/"
-      search={{
-        country: countryCode,
-        metric: topMetric,
-        order,
-        page: 1,
-        limit: 100,
-      }}
-      aria-label={`Open ${countryName} leaderboard`}
+      to="/countries/$code"
+      params={{ code: countryCode }}
+      search={{ rankBy: "profiles", order: "desc" }}
+      aria-label={`Open ${countryName} country stats`}
       className="group bg-card border-border/60 hover:border-border flex flex-col rounded-xl border p-4 outline-none transition-colors hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring/30"
     >
       <div className="flex items-start justify-between gap-2">
@@ -92,6 +87,21 @@ function CountryStatsCard({
         {formatInt(stats.profileCount)}{" "}
         {stats.profileCount === 1 ? "profile" : "profiles"}
       </p>
+
+      {stats.topModel && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span className="text-muted-foreground text-[0.6875rem]">
+            Top model
+          </span>
+          <Badge
+            variant="outline"
+            className="max-w-[10rem] truncate px-1.5 py-0 text-[0.625rem] font-normal"
+            title={stats.topModel}
+          >
+            {stats.topModel}
+          </Badge>
+        </div>
+      )}
 
       {stats.topThree.length > 0 ? (
         <ul className="divide-border/50 border-border/50 mt-3 flex flex-col divide-y border-t">
@@ -135,7 +145,7 @@ function CountryStatsCard({
       )}
 
       <span className="text-muted-foreground/60 group-hover:text-foreground mt-3 inline-flex items-center gap-1 text-[0.6875rem] font-medium transition-colors">
-        View {countryName} board
+        View {countryName} stats
         <ArrowRight
           aria-hidden
           className="size-3 transition-transform group-hover:translate-x-0.5"
