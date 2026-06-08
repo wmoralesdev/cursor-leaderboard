@@ -27,6 +27,31 @@ describe("parseLeaderboardSearch", () => {
       limit: 25,
     })
   })
+
+  it("omits models when empty", () => {
+    expect(parseLeaderboardSearch({}).models).toBeUndefined()
+  })
+
+  it("parses joined metric and comma-separated model filters", () => {
+    expect(
+      parseLeaderboardSearch({
+        metric: "joined",
+        models: "Composer 2.5, Composer 2",
+      }),
+    ).toEqual({
+      metric: "joined",
+      order: "desc",
+      models: ["Composer 2.5", "Composer 2"],
+      page: 1,
+      limit: 100,
+    })
+  })
+
+  it("parses model filters from a parsed array (router-serialized)", () => {
+    expect(
+      parseLeaderboardSearch({ models: ["Composer 2.5", "GPT-5.5"] }).models,
+    ).toEqual(["Composer 2.5", "GPT-5.5"])
+  })
 })
 
 describe("leaderboardCanonicalPath", () => {
@@ -51,6 +76,18 @@ describe("leaderboardCanonicalPath", () => {
         limit: 100,
       }),
     ).toBe("/?metric=tokens")
+  })
+
+  it("keeps model filters in canonical", () => {
+    expect(
+      leaderboardCanonicalPath({
+        metric: "agents",
+        order: "desc",
+        models: ["Composer 2.5"],
+        page: 1,
+        limit: 100,
+      }),
+    ).toBe("/?models=Composer+2.5")
   })
 })
 

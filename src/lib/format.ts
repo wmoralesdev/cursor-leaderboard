@@ -1,4 +1,4 @@
-import { Bot, Coins, Flame,  TrendingUp } from "lucide-react"
+import { Bot, Calendar, Clock, Coins, Flame, TrendingUp } from "lucide-react"
 import type {LucideIcon} from "lucide-react";
 
 import type { EntryDto, MetricKey } from "@/lib/api"
@@ -26,6 +26,18 @@ export const METRICS: MetricMeta[] = [
     label: "Longest Streak",
     shortLabel: "Longest",
     icon: Flame,
+  },
+  {
+    key: "longestAgent",
+    label: "Longest Agent",
+    shortLabel: "Session",
+    icon: Clock,
+  },
+  {
+    key: "joined",
+    label: "Member Since",
+    shortLabel: "Joined",
+    icon: Calendar,
   },
 ]
 
@@ -65,6 +77,10 @@ export function formatMetricValue(metric: MetricKey, entry: EntryDto): string {
       return `${entry.currentStreakDays}d`
     case "longestStreak":
       return `${entry.longestStreakDays}d`
+    case "longestAgent":
+      return `${entry.longestAgentHours}h`
+    case "joined":
+      return entry.joinedDaysAgo !== null ? `${entry.joinedDaysAgo}d` : "—"
     case "agents":
     default:
       return formatAgents(entry.agentsTotal)
@@ -82,9 +98,39 @@ export function countryRankDescription(rankBy: CountryRankBy): string {
       return "Countries ranked by the highest current streak in each country."
     case "longestStreak":
       return "Countries ranked by the longest streak in each country."
+    case "longestAgent":
+      return "Countries ranked by the longest single agent session in each country."
     case "agents":
     default:
       return "Countries ranked by total agents across profiles in each country."
+  }
+}
+
+export type LeaderboardStatsSums = {
+  agents: number
+  tokens: string
+  currentStreak: number
+  longestStreak: number
+}
+
+export function formatMetricSum(
+  metric: MetricKey,
+  sums: LeaderboardStatsSums,
+): string | null {
+  switch (metric) {
+    case "tokens":
+      return formatTokens(sums.tokens)
+    case "currentStreak":
+      return `${formatInt(sums.currentStreak)}d`
+    case "longestStreak":
+      return `${formatInt(sums.longestStreak)}d`
+    case "longestAgent":
+      return null
+    case "joined":
+      return null
+    case "agents":
+    default:
+      return formatAgents(sums.agents)
   }
 }
 
@@ -92,9 +138,13 @@ export function metricUnitLabel(metric: MetricKey): string {
   switch (metric) {
     case "tokens":
       return "tokens"
-    case "currentStreak":
     case "longestStreak":
+    case "currentStreak":
       return "day streak"
+    case "longestAgent":
+      return "hours"
+    case "joined":
+      return "days on Cursor"
     case "agents":
     default:
       return "agents"

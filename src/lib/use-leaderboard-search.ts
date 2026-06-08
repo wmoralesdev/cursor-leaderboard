@@ -14,6 +14,7 @@ type UseLeaderboardSearchOptions = {
   metric: MetricKey
   order: SortOrder
   country: string | null
+  models: string[]
   limit: LeaderboardPageSize
 }
 
@@ -21,6 +22,7 @@ function useLeaderboardSearch({
   metric,
   order,
   country,
+  models,
   limit,
 }: UseLeaderboardSearchOptions) {
   const [query, setQuery] = useState("")
@@ -35,6 +37,7 @@ function useLeaderboardSearch({
   const isDebouncing =
     trimmedInput.length >= SEARCH_MIN_LENGTH &&
     trimmedInput !== trimmedDebounced
+  const modelsKey = models.join("\0")
 
   useEffect(() => {
     if (!trimmedInput) {
@@ -67,6 +70,7 @@ function useLeaderboardSearch({
         metric,
         order,
         country,
+        models,
         limit,
       },
     })
@@ -90,7 +94,7 @@ function useLeaderboardSearch({
     return () => {
       cancelled = true
     }
-  }, [active, trimmedDebounced, metric, order, country, limit])
+  }, [active, trimmedDebounced, metric, order, country, modelsKey, limit])
 
   function clear() {
     setQuery("")

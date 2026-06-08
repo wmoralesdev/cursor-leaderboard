@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { StandingResult } from "@/components/leaderboard/standing-result"
 import { Input } from "@/components/ui/input"
 
 function JoinDialog() {
@@ -137,6 +138,32 @@ function JoinDialog() {
 
 function SuccessState({ result }: { result: SubmitResult }) {
   const country = countryByCode(result.entry.country)
+
+  if (result.standing) {
+    return (
+      <div className="flex flex-col gap-4">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 className="text-success size-4" />
+            You&apos;re on the board
+          </DialogTitle>
+          <DialogDescription>
+            {result.entry.displayName || `@${result.entry.handle}`} added
+            {country ? ` for ${country.flag} ${country.name}` : ""}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <StandingResult standing={result.standing} />
+
+        <DialogFooter>
+          <DialogClose className={cn(buttonVariants({ variant: "default" }))}>
+            View board
+          </DialogClose>
+        </DialogFooter>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <DialogHeader>

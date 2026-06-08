@@ -14,7 +14,25 @@ const METRIC_KEYS: MetricKey[] = [
   "tokens",
   "currentStreak",
   "longestStreak",
+  "longestAgent",
+  "joined",
 ]
+
+function sanitizeModels(values: string[]): string[] {
+  return values
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0 && m.length <= 200)
+}
+
+function parseModels(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return sanitizeModels(raw.filter((m): m is string => typeof m === "string"))
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    return sanitizeModels(raw.split(","))
+  }
+  return []
+}
 
 const SORT_ORDERS: SortOrder[] = ["asc", "desc"]
 const PAGE_SIZES: LeaderboardPageSize[] = [25, 50, 100]
@@ -51,17 +69,26 @@ export function parseLeaderboardSearch(
 
   const page = parsePage(search.page)
   const limit = parsePageSize(search.limit)
+  const models = parseModels(search.models)
 
-  const base = { metric, order, page, limit }
-  return country ? { ...base, country } : base
+  const base: LeaderboardSeoSearch = { metric, order, page, limit }
+  if (models.length > 0) base.models = models
+  if (country) base.country = country
+  return base
 }
 
 export type LeaderboardSeoSearch = {
   metric: MetricKey
   order: SortOrder
   country?: string
+  models?: string[]
   page: number
   limit: LeaderboardPageSize
+}
+
+export function modelsToSearchParam(models: string[]): string | undefined {
+  if (models.length === 0) return undefined
+  return models.join(",")
 }
 
 export function leaderboardCanonicalPath(search: LeaderboardSeoSearch): string {
@@ -71,6 +98,10 @@ export function leaderboardCanonicalPath(search: LeaderboardSeoSearch): string {
   }
   if (search.metric !== "agents") {
     params.set("metric", search.metric)
+  }
+  const modelsParam = modelsToSearchParam(search.models ?? [])
+  if (modelsParam) {
+    params.set("models", modelsParam)
   }
   const query = params.toString()
   return query ? `/?${query}` : "/"

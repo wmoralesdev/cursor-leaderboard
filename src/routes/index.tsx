@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
 import type {
   LeaderboardPageSize,
@@ -10,17 +10,22 @@ import { getLeaderboard } from "@/lib/api"
 import { countryByCode } from "@/lib/countries"
 import {
   buildLeaderboardHead,
-  parseLeaderboardSearch
-  
+  parseLeaderboardSearch,
 } from "@/lib/leaderboard-seo"
 import type {LeaderboardSeoSearch} from "@/lib/leaderboard-seo";
+import { AppNavbar } from "@/components/layout/app-navbar"
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
+import { LeaderboardHeaderStats } from "@/components/leaderboard/leaderboard-header-stats"
 import { LeaderboardPagination } from "@/components/leaderboard/leaderboard-pagination"
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
 import { LeaderboardToolbar } from "@/components/leaderboard/leaderboard-toolbar"
 import { RankSearch } from "@/components/leaderboard/rank-search"
-import { ThemeToggle } from "@/components/theme/theme-toggle"
 import { useLeaderboardSearch } from "@/lib/use-leaderboard-search"
+import {
+  StandingResult,
+  StandingResultSkeleton,
+} from "@/components/leaderboard/standing-result"
+import { useStandingCard } from "@/lib/use-standing-card"
 import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/")({
@@ -40,6 +45,7 @@ export const Route = createFileRoute("/")({
         metric: deps.metric,
         order: deps.order,
         country: deps.country ?? null,
+        models: deps.models,
         page: deps.page,
         limit: deps.limit,
       },
@@ -47,8 +53,12 @@ export const Route = createFileRoute("/")({
   component: LeaderboardPage,
 })
 
+const EMPTY_MODELS: string[] = []
+
 function LeaderboardPage() {
-  const { metric, order, country, page, limit } = Route.useSearch()
+  const search_ = Route.useSearch()
+  const { metric, order, country, page, limit } = search_
+  const models = search_.models ?? EMPTY_MODELS
   const data = Route.useLoaderData()
   const navigate = useNavigate({ from: Route.fullPath })
 
@@ -63,13 +73,19 @@ function LeaderboardPage() {
   function setCountry(next: string | null) {
     navigate({
       search: (prev) => {
-        const base = {
-          metric: prev.metric,
-          order: prev.order,
-          page: 1,
-          limit: prev.limit,
-        }
-        return next ? { ...base, country: next } : base
+        const { country: _country, ...rest } = prev
+        return next ? { ...rest, country: next, page: 1 } : { ...rest, page: 1 }
+      },
+    })
+  }
+
+  function setModels(next: string[]) {
+    navigate({
+      search: (prev) => {
+        const { models: _models, ...rest } = prev
+        return next.length > 0
+          ? { ...rest, models: next, page: 1 }
+          : { ...rest, page: 1 }
       },
     })
   }
@@ -87,52 +103,49 @@ function LeaderboardPage() {
     metric,
     order,
     country: country ?? null,
+    models,
     limit,
   })
 
   const searchEntries = search.results?.results.map((item) => item.entry) ?? []
+  const singleSearchHandle =
+    search.active && searchEntries.length === 1 ? searchEntries[0]?.handle : null
+  const standing = useStandingCard({
+    handle: singleSearchHandle,
+    metric,
+    order,
+    models,
+    enabled: Boolean(singleSearchHandle),
+  })
+
+  const showSingleMatchStanding =
+    Boolean(singleSearchHandle) &&
+    (standing.loading || Boolean(standing.standing))
+  const showSearchTableFallback =
+    Boolean(singleSearchHandle) &&
+    !standing.loading &&
+    !standing.standing
 
   return (
     <div className="min-h-svh">
-      <header className="border-border/60 sticky top-0 z-10 flex h-12 items-center justify-between border-b bg-background/80 px-5 backdrop-blur-md">
-        <Link
-          to="/"
-          search={{ metric: "agents", order: "desc", page: 1, limit: 100 }}
-          className="flex min-w-0 items-center gap-2 text-sm font-medium outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
-        >
-          <img
-            src="/CUBE_2D_DARK.png"
-            alt="Cursor Leaderboard"
-            width={24}
-            height={24}
-            className="size-4 shrink-0 object-contain"
-          />
-          <span className="truncate">Cursor Leaderboard</span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Link
-            to="/countries"
-            search={{ rankBy: "profiles", order: "desc" }}
-            className="text-muted-foreground hover:text-foreground text-xs transition-colors"
-          >
-            Countries
-          </Link>
-          <JoinDialog />
-        </div>
-      </header>
+      <AppNavbar />
 
       <main className="mx-auto flex max-w-3xl flex-col gap-8 px-5 py-10">
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-xl font-semibold tracking-tight">
+          <div className="grid gap-1.5 md:grid-cols-[1fr_auto] md:items-baseline">
+            <h1 className="text-xl font-semibold tracking-tight md:col-start-1 md:row-start-1">
               {activeCountry
                 ? `${activeCountry.flag} ${activeCountry.name} leaderboard`
                 : "Global leaderboard"}
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm md:col-span-2 md:row-start-2">
               Public Cursor profile stats, ranked for the community.
             </p>
+            <LeaderboardHeaderStats
+              stats={data.stats}
+              metric={metric}
+              className="md:col-start-2 md:row-start-1 md:justify-self-end"
+            />
           </div>
 
           <RankSearch
@@ -149,9 +162,11 @@ function LeaderboardPage() {
           metric={metric}
           order={order}
           country={country ?? null}
+          models={models}
           onMetricChange={setMetric}
           onOrderChange={setOrder}
           onCountryChange={setCountry}
+          onModelsChange={setModels}
         />
 
         {search.active ? (
@@ -192,7 +207,23 @@ function LeaderboardPage() {
                 <JoinDialog />
               </div>
             ) : (
-              <LeaderboardTable entries={searchEntries} metric={metric} />
+              <>
+                {showSingleMatchStanding ? (
+                  standing.standing ? (
+                    <StandingResult standing={standing.standing} />
+                  ) : (
+                    <StandingResultSkeleton />
+                  )
+                ) : null}
+                {searchEntries.length > 1 || showSearchTableFallback ? (
+                  <LeaderboardTable entries={searchEntries} metric={metric} />
+                ) : null}
+                {standing.error && singleSearchHandle ? (
+                  <p className="text-muted-foreground text-xs">
+                    Could not load standing details. Showing basic row instead.
+                  </p>
+                ) : null}
+              </>
             )}
           </div>
         ) : (

@@ -55,4 +55,11 @@ describe("formatMetricValue", () => {
       }),
     ).toBe("5.2B")
   })
+
+  it("formats joined tenure in days", () => {
+    expect(
+      formatMetricValue("joined", { ...baseEntry, joinedDaysAgo: 821 }),
+    ).toBe("821d")
+    expect(formatMetricValue("joined", baseEntry)).toBe("—")
+  })
 })
