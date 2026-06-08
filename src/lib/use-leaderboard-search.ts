@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react"
+import { debounce, useQueryState } from "nuqs"
 
-import {
-  
-  
-  
-  
-  searchLeaderboard
+import { searchLeaderboard } from "@/lib/api"
+import type {
+  LeaderboardPageSize,
+  MetricKey,
+  SearchResult,
+  SortOrder,
 } from "@/lib/api"
-import type {LeaderboardPageSize, MetricKey, SearchResult, SortOrder} from "@/lib/api";
+import { leaderboardSearchParams } from "@/lib/leaderboard-search-params"
 import { SEARCH_DEBOUNCE_MS, SEARCH_MIN_LENGTH } from "@/lib/search"
 
 type UseLeaderboardSearchOptions = {
@@ -23,8 +24,8 @@ function useLeaderboardSearch({
   country,
   limit,
 }: UseLeaderboardSearchOptions) {
-  const [query, setQuery] = useState("")
-  const [debouncedQuery, setDebouncedQuery] = useState("")
+  const [query, setQueryState] = useQueryState("q", leaderboardSearchParams.q)
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -92,8 +93,15 @@ function useLeaderboardSearch({
     }
   }, [active, trimmedDebounced, metric, order, country, limit])
 
+  function setQuery(value: string) {
+    void setQueryState(value, {
+      limitUrlUpdates:
+        value.trim() === "" ? undefined : debounce(SEARCH_DEBOUNCE_MS),
+    })
+  }
+
   function clear() {
-    setQuery("")
+    void setQueryState(null)
     setDebouncedQuery("")
     setResults(null)
     setError(null)

@@ -1,4 +1,5 @@
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
+import { useQueryStates } from "nuqs"
 
 import type {
   LeaderboardPageSize,
@@ -8,12 +9,14 @@ import type {
 } from "@/lib/api"
 import { getLeaderboard } from "@/lib/api"
 import { countryByCode } from "@/lib/countries"
+import { buildLeaderboardHead } from "@/lib/leaderboard-seo"
 import {
-  buildLeaderboardHead,
-  parseLeaderboardSearch
+  leaderboardSearchParams,
+  leaderboardSearchSchema,
+  toLeaderboardSeoSearch
   
-} from "@/lib/leaderboard-seo"
-import type {LeaderboardSeoSearch} from "@/lib/leaderboard-seo";
+} from "@/lib/leaderboard-search-params"
+import type {LeaderboardSeoSearch} from "@/lib/leaderboard-search-params";
 import { JoinDialog } from "@/components/leaderboard/join-dialog"
 import { LeaderboardPagination } from "@/components/leaderboard/leaderboard-pagination"
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
@@ -24,17 +27,16 @@ import { useLeaderboardSearch } from "@/lib/use-leaderboard-search"
 import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>): LeaderboardSeoSearch =>
-    parseLeaderboardSearch(search),
+  validateSearch: leaderboardSearchSchema,
   head: ({ match }) =>
-    buildLeaderboardHead(
-      parseLeaderboardSearch(
-        match.search as Record<string, unknown>,
-      ),
-    ),
+    buildLeaderboardHead(toLeaderboardSeoSearch(match.search)),
   loaderDeps: ({ search }): LeaderboardSeoSearch =>
-    parseLeaderboardSearch(search as Record<string, unknown>),
-  loader: ({ deps }: { deps: LeaderboardSeoSearch }): Promise<LeaderboardResult> =>
+    toLeaderboardSeoSearch(search),
+  loader: ({
+    deps,
+  }: {
+    deps: LeaderboardSeoSearch
+  }): Promise<LeaderboardResult> =>
     getLeaderboard({
       data: {
         metric: deps.metric,
@@ -48,38 +50,32 @@ export const Route = createFileRoute("/")({
 })
 
 function LeaderboardPage() {
-  const { metric, order, country, page, limit } = Route.useSearch()
+  const [{ metric, order, country, page, limit }, setSearch] = useQueryStates(
+    leaderboardSearchParams,
+  )
   const data = Route.useLoaderData()
-  const navigate = useNavigate({ from: Route.fullPath })
 
   function setMetric(next: MetricKey) {
-    navigate({ search: (prev) => ({ ...prev, metric: next, page: 1 }) })
+    void setSearch({ metric: next, page: 1 })
   }
 
   function setOrder(next: SortOrder) {
-    navigate({ search: (prev) => ({ ...prev, order: next, page: 1 }) })
+    void setSearch({ order: next, page: 1 })
   }
 
   function setCountry(next: string | null) {
-    navigate({
-      search: (prev) => {
-        const base = {
-          metric: prev.metric,
-          order: prev.order,
-          page: 1,
-          limit: prev.limit,
-        }
-        return next ? { ...base, country: next } : base
-      },
+    void setSearch({
+      country: next,
+      page: 1,
     })
   }
 
   function setPage(next: number) {
-    navigate({ search: (prev) => ({ ...prev, page: next }) })
+    void setSearch({ page: next })
   }
 
   function setLimit(next: LeaderboardPageSize) {
-    navigate({ search: (prev) => ({ ...prev, limit: next, page: 1 }) })
+    void setSearch({ limit: next, page: 1 })
   }
 
   const activeCountry = country ? countryByCode(country) : null
@@ -161,12 +157,12 @@ function LeaderboardPage() {
                 {search.isDebouncing
                   ? `Waiting to search for “${search.query.trim()}”…`
                   : search.loading && !search.results
-                  ? `Searching for “${search.debouncedQuery}”…`
-                  : search.results && search.results.total > searchEntries.length
-                    ? `${searchEntries.length} of ${search.results.total} matches for “${search.results.query}”`
-                    : search.results
-                      ? `${searchEntries.length} match${searchEntries.length === 1 ? "" : "es"} for “${search.results.query}”`
-                      : null}
+                    ? `Searching for “${search.debouncedQuery}”…`
+                    : search.results && search.results.total > searchEntries.length
+                      ? `${searchEntries.length} of ${search.results.total} matches for “${search.results.query}”`
+                      : search.results
+                        ? `${searchEntries.length} match${searchEntries.length === 1 ? "" : "es"} for “${search.results.query}”`
+                        : null}
               </p>
               <Button
                 type="button"
