@@ -42,4 +42,46 @@ model LeaderboardEntry {
   @@index([tokensTotal(sort: Desc)])
   @@index([currentStreakDays(sort: Desc)])
   @@index([longestStreakDays(sort: Desc)])
+  @@index([joinedDaysAgo(sort: Desc)])
+  @@index([longestAgentHours(sort: Desc)])
+  @@index([scrapedAt])
+}
+
+model CountryDetailCache {
+  country          String   @id @db.Char(2)
+  profileCount     Int
+  globalRank       Int?
+  topModel         String?
+  avgAgentsTotal   Float
+  avgCloudShare    Float
+  maxLongestStreak Int
+  topBuilders      Json
+  computedAt       DateTime
+}
+
+model ModelStatsCache {
+  model            String   @id
+  profileCount     Int
+  topCountries     Json
+  topBuilders      Json
+  avgAgentsTotal   Float
+  avgCurrentStreak Float
+  computedAt       DateTime
+}
+
+model LeaderboardStatsCache {
+  id               String   @id @default("global")
+  profileCount     Int
+  agentsSum        Int
+  tokensSum        BigInt
+  currentStreakSum Int
+  longestStreakSum Int
+  computedAt       DateTime
+}
+
+model CountryStatsCache {
+  id           String   @id @default("global")
+  countryCount Int
+  topModel     String?
+  computedAt   DateTime
 }
