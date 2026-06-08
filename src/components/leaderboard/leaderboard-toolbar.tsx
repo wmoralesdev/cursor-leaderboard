@@ -1,63 +1,95 @@
 import type { MetricKey, SortOrder } from "@/lib/api"
 import { cn } from "@/lib/utils"
-import { MetricTabs } from "@/components/leaderboard/metric-tabs"
-import { ScopeFilter } from "@/components/leaderboard/scope-filter"
-import { SortOrderControl } from "@/components/leaderboard/sort-order-control"
+import { ActiveFilters } from "@/components/leaderboard/active-filters"
+import { MetricPicker } from "@/components/leaderboard/metric-picker"
+import { ModelFilter } from "@/components/leaderboard/model-filter"
+import { ScopePicker } from "@/components/leaderboard/scope-picker"
+import { SortOrderPicker } from "@/components/leaderboard/sort-order-picker"
 
 type LeaderboardToolbarProps = {
   metric: MetricKey
   order: SortOrder
   country: string | null
+  models: string[]
   onMetricChange: (metric: MetricKey) => void
   onOrderChange: (order: SortOrder) => void
   onCountryChange: (code: string | null) => void
+  onModelsChange: (models: string[]) => void
   className?: string
+}
+
+function FilterField({
+  label,
+  children,
+  className,
+}: {
+  label: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-1", className)}>
+      <span className="text-muted-foreground text-[0.6875rem] font-medium">
+        {label}
+      </span>
+      {children}
+    </div>
+  )
 }
 
 function LeaderboardToolbar({
   metric,
   order,
   country,
+  models,
   onMetricChange,
   onOrderChange,
   onCountryChange,
+  onModelsChange,
   className,
 }: LeaderboardToolbarProps) {
   return (
     <section
-      aria-labelledby="browse-leaderboard-label"
-      className={cn("flex w-full flex-col gap-3", className)}
+      aria-label="Browse leaderboard"
+      className={cn("flex w-full flex-col gap-2.5", className)}
     >
-      <div className="flex flex-col gap-1.5">
-        <h2
-          id="browse-leaderboard-label"
-          className="text-foreground text-xs font-medium"
-        >
-          Browse leaderboard
-        </h2>
-        <MetricTabs
-          value={metric}
-          onValueChange={onMetricChange}
-          aria-label="Rank by"
-        />
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <FilterField label="Rank by">
+          <MetricPicker
+            value={metric}
+            onValueChange={onMetricChange}
+            aria-label="Rank by"
+          />
+        </FilterField>
+
+        <FilterField label="Scope">
+          <ScopePicker
+            country={country}
+            onCountryChange={onCountryChange}
+            aria-label="Scope"
+          />
+        </FilterField>
+
+        <FilterField label="Models">
+          <ModelFilter value={models} onValueChange={onModelsChange} />
+        </FilterField>
+
+        <FilterField label="Sort">
+          <SortOrderPicker
+            value={order}
+            onValueChange={onOrderChange}
+            aria-label="Sort order"
+          />
+        </FilterField>
       </div>
 
-      <div
-        role="group"
-        aria-label="Sort and scope"
-        className="flex w-full flex-wrap items-center gap-x-2 gap-y-3"
-      >
-        <SortOrderControl
-          value={order}
-          onValueChange={onOrderChange}
-          aria-label="Sort order"
-        />
-        <ScopeFilter
-          country={country}
-          onCountryChange={onCountryChange}
-          aria-label="Scope"
-        />
-      </div>
+      <ActiveFilters
+        country={country}
+        models={models}
+        onCountryChange={onCountryChange}
+        onModelsChange={onModelsChange}
+        showCountry={false}
+      />
     </section>
   )
 }
